@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 )
 
 type TransactionService interface {
-	Create(ctx context.Context, req *domain.TransactionCreateRequest, staffUserID uuid.UUID, staffBranch string) (*domain.MemberPointTransaction, error)
+	Create(ctx context.Context, req *domain.TransactionCreateRequest, staffUserID uuid.UUID, staffBranch string) (*domain.TransactionCreateResponse, error)
 	ListByMember(ctx context.Context, memberID uuid.UUID, staffBranch string, page, limit int) (*domain.TransactionListResponse, error)
 	ListByBranch(ctx context.Context, staffBranch string, page, limit int) (*domain.TransactionListResponse, error)
 }
@@ -28,7 +29,7 @@ func NewTransactionService(transactionRepo repository.TransactionRepository, mem
 	}
 }
 
-func (s *transactionService) Create(ctx context.Context, req *domain.TransactionCreateRequest, staffUserID uuid.UUID, staffBranch string) (*domain.MemberPointTransaction, error) {
+func (s *transactionService) Create(ctx context.Context, req *domain.TransactionCreateRequest, staffUserID uuid.UUID, staffBranch string) (*domain.TransactionCreateResponse, error) {
 	member, err := s.memberRepo.GetByID(ctx, req.MemberID)
 	if err != nil {
 		return nil, err
@@ -41,45 +42,81 @@ func (s *transactionService) Create(ctx context.Context, req *domain.Transaction
 		return nil, errors.New("unauthorized: member belongs to different branch")
 	}
 
-	transaction := &domain.MemberPointTransaction{
-		ID:          uuid.New(),
-		MemberID:    req.MemberID,
-		StaffUserID: staffUserID,
-		Action:      req.Action,
-		ProductType: req.ProductType,
-		Points:      req.Points,
-		ReceiptText: req.ReceiptText,
-		CreatedAt:   time.Now(),
-	}
-
-	err = s.transactionRepo.Create(ctx, transaction)
-	if err != nil {
-		return nil, err
-	}
-
 	newTotalPoints := member.TotalPoints
 	newMilestoneScore := member.MilestoneScore
 	newPoints1_0Liter := member.Points1_0Liter
 	newPoints1_5Liter := member.Points1_5Liter
 
-	switch req.Action {
-	case domain.ActionAdd:
-		newTotalPoints += req.Points
-		newMilestoneScore += req.Points
+	var transactions []domain.MemberPointTransaction
+	totalPointsInRequest := 0
 
-		switch req.ProductType {
-		case domain.ProductType1_0Liter:
-			newPoints1_0Liter += req.Points
-		case domain.ProductType1_5Liter:
-			newPoints1_5Liter += req.Points
+	if req.Action == domain.ActionRedeem {
+		redeem1_0Liter := 0
+		redeem1_5Liter := 0
+
+		for _, product := range req.Products {
+			switch product.ProductType {
+			case domain.ProductType1_0Liter:
+				redeem1_0Liter += product.Points
+			case domain.ProductType1_5Liter:
+				redeem1_5Liter += product.Points
+			}
 		}
-	case domain.ActionDeduct, domain.ActionRedeem:
-		newTotalPoints -= req.Points
-		if newTotalPoints < 0 {
-			newTotalPoints = 0
+
+		if redeem1_0Liter > 0 && member.Points1_0Liter < redeem1_0Liter {
+			return nil, fmt.Errorf("insufficient 1.0L points: member has %d points from 1.0L products but trying to redeem %d points", member.Points1_0Liter, redeem1_0Liter)
 		}
-	case domain.ActionAdjust:
-		newTotalPoints = req.Points
+
+		if redeem1_5Liter > 0 && member.Points1_5Liter < redeem1_5Liter {
+			return nil, fmt.Errorf("insufficient 1.5L points: member has %d points from 1.5L products but trying to redeem %d points", member.Points1_5Liter, redeem1_5Liter)
+		}
+	}
+
+	for _, product := range req.Products {
+		transaction := &domain.MemberPointTransaction{
+			ID:          uuid.New(),
+			MemberID:    req.MemberID,
+			StaffUserID: staffUserID,
+			Action:      req.Action,
+			ProductType: product.ProductType,
+			Points:      product.Points,
+			ReceiptText: req.ReceiptText,
+			CreatedAt:   time.Now(),
+		}
+
+		err = s.transactionRepo.Create(ctx, transaction)
+		if err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, *transaction)
+		totalPointsInRequest += product.Points
+
+		switch req.Action {
+		case domain.ActionEarn:
+			newTotalPoints += product.Points
+			newMilestoneScore += product.Points
+
+			switch product.ProductType {
+			case domain.ProductType1_0Liter:
+				newPoints1_0Liter += product.Points
+			case domain.ProductType1_5Liter:
+				newPoints1_5Liter += product.Points
+			}
+		case domain.ActionRedeem:
+			newTotalPoints -= product.Points
+
+			switch product.ProductType {
+			case domain.ProductType1_0Liter:
+				newPoints1_0Liter -= product.Points
+			case domain.ProductType1_5Liter:
+				newPoints1_5Liter -= product.Points
+			}
+		}
+	}
+
+	if newTotalPoints < 0 {
+		newTotalPoints = 0
 	}
 
 	err = s.memberRepo.UpdatePoints(ctx, req.MemberID, newTotalPoints, newMilestoneScore, newPoints1_0Liter, newPoints1_5Liter)
@@ -87,7 +124,13 @@ func (s *transactionService) Create(ctx context.Context, req *domain.Transaction
 		return nil, err
 	}
 
-	return transaction, nil
+	message := fmt.Sprintf("Successfully processed %d product(s) with %d total points", len(req.Products), totalPointsInRequest)
+
+	return &domain.TransactionCreateResponse{
+		Transactions: transactions,
+		TotalPoints:  totalPointsInRequest,
+		Message:      message,
+	}, nil
 }
 
 func (s *transactionService) ListByMember(ctx context.Context, memberID uuid.UUID, staffBranch string, page, limit int) (*domain.TransactionListResponse, error) {

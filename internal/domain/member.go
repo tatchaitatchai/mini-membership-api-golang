@@ -29,7 +29,6 @@ type MemberCreateRequest struct {
 	Name                      string  `json:"name" binding:"required"`
 	Last4                     *string `json:"last4,omitempty"`
 	Branch                    *string `json:"branch,omitempty"`
-	MembershipNumber          *string `json:"membership_number,omitempty"`
 	RegistrationReceiptNumber *string `json:"registration_receipt_number,omitempty"`
 }
 

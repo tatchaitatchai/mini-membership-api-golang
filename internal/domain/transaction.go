@@ -9,18 +9,15 @@ import (
 type TransactionAction string
 
 const (
-	ActionAdd    TransactionAction = "add"
-	ActionDeduct TransactionAction = "deduct"
-	ActionRedeem TransactionAction = "redeem"
-	ActionAdjust TransactionAction = "adjust"
+	ActionEarn   TransactionAction = "EARN"
+	ActionRedeem TransactionAction = "REDEEM"
 )
 
 type ProductType string
 
 const (
-	ProductType1_0Liter ProductType = "1.0_liter"
-	ProductType1_5Liter ProductType = "1.5_liter"
-	ProductTypeOther    ProductType = "other"
+	ProductType1_0Liter ProductType = "1_0_LITER"
+	ProductType1_5Liter ProductType = "1_5_LITER"
 )
 
 type MemberPointTransaction struct {
@@ -34,12 +31,22 @@ type MemberPointTransaction struct {
 	CreatedAt   time.Time         `db:"created_at" json:"created_at"`
 }
 
+type ProductPoint struct {
+	ProductType ProductType `json:"product_type" binding:"required,oneof=1_0_LITER 1_5_LITER"`
+	Points      int         `json:"points" binding:"required,min=1"`
+}
+
 type TransactionCreateRequest struct {
 	MemberID    uuid.UUID         `json:"member_id" binding:"required"`
-	Action      TransactionAction `json:"action" binding:"required,oneof=add deduct redeem adjust"`
-	ProductType ProductType       `json:"product_type" binding:"required,oneof=1.0_liter 1.5_liter other"`
-	Points      int               `json:"points" binding:"required,min=1"`
+	Action      TransactionAction `json:"action" binding:"required,oneof=EARN REDEEM"`
+	Products    []ProductPoint    `json:"products" binding:"required,min=1,dive"`
 	ReceiptText *string           `json:"receipt_text,omitempty"`
+}
+
+type TransactionCreateResponse struct {
+	Transactions []MemberPointTransaction `json:"transactions"`
+	TotalPoints  int                      `json:"total_points"`
+	Message      string                   `json:"message"`
 }
 
 type TransactionListResponse struct {

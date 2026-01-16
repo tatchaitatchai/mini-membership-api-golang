@@ -15,7 +15,8 @@ type MemberRepository interface {
 	Create(ctx context.Context, member *domain.Member) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Member, error)
 	Update(ctx context.Context, member *domain.Member) error
-	List(ctx context.Context, branch *string, page, limit int) ([]domain.Member, int, error)
+	List(ctx context.Context, branch *string, search string, page, limit int) ([]domain.Member, int, error)
+	GetLastMembershipNumber(ctx context.Context) (string, error)
 	UpdatePoints(ctx context.Context, memberID uuid.UUID, totalPoints, milestoneScore, points1_0Liter, points1_5Liter int) error
 }
 
@@ -81,25 +82,43 @@ func (r *memberRepository) Update(ctx context.Context, member *domain.Member) er
 	return err
 }
 
-func (r *memberRepository) List(ctx context.Context, branch *string, page, limit int) ([]domain.Member, int, error) {
+func (r *memberRepository) List(ctx context.Context, branch *string, search string, page, limit int) ([]domain.Member, int, error) {
 	var members []domain.Member
 	var total int
 
 	offset := (page - 1) * limit
 
-	whereClause := ""
-	args := []interface{}{limit, offset}
+	whereConditions := []string{}
+	args := []interface{}{}
+	argIndex := 1
 
 	if branch != nil && *branch != "" {
-		whereClause = "WHERE branch = $3"
+		whereConditions = append(whereConditions, fmt.Sprintf("branch = $%d", argIndex))
 		args = append(args, *branch)
+		argIndex++
+	}
+
+	if search != "" {
+		whereConditions = append(whereConditions, fmt.Sprintf("(name ILIKE $%d OR last4 ILIKE $%d)", argIndex, argIndex))
+		args = append(args, "%"+search+"%")
+		argIndex++
+	}
+
+	whereClause := ""
+	if len(whereConditions) > 0 {
+		whereClause = "WHERE " + fmt.Sprintf("%s", whereConditions[0])
+		for i := 1; i < len(whereConditions); i++ {
+			whereClause += " AND " + whereConditions[i]
+		}
 	}
 
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM members %s", whereClause)
-	err := r.db.GetContext(ctx, &total, countQuery, args[2:]...)
+	err := r.db.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
+
+	args = append(args, limit, offset)
 
 	query := fmt.Sprintf(`
 		SELECT id, old_id, name, last4, total_points, milestone_score,
@@ -109,8 +128,8 @@ func (r *memberRepository) List(ctx context.Context, branch *string, page, limit
 		FROM members
 		%s
 		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`, whereClause)
+		LIMIT $%d OFFSET $%d
+	`, whereClause, argIndex, argIndex+1)
 
 	err = r.db.SelectContext(ctx, &members, query, args...)
 	if err != nil {
@@ -118,6 +137,30 @@ func (r *memberRepository) List(ctx context.Context, branch *string, page, limit
 	}
 
 	return members, total, nil
+}
+
+func (r *memberRepository) GetLastMembershipNumber(ctx context.Context) (string, error) {
+	var membershipNumber sql.NullString
+	query := `
+		SELECT membership_number 
+		FROM members 
+		WHERE membership_number LIKE 'MR-%'
+		ORDER BY membership_number DESC 
+		LIMIT 1
+	`
+
+	err := r.db.GetContext(ctx, &membershipNumber, query)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	if membershipNumber.Valid {
+		return membershipNumber.String, nil
+	}
+	return "", nil
 }
 
 func (r *memberRepository) UpdatePoints(ctx context.Context, memberID uuid.UUID, totalPoints, milestoneScore, points1_0Liter, points1_5Liter int) error {

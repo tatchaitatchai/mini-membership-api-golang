@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ type MemberService interface {
 	Create(ctx context.Context, req *domain.MemberCreateRequest, staffBranch, registeredByStaff string) (*domain.Member, error)
 	GetByID(ctx context.Context, memberID uuid.UUID, staffBranch string) (*domain.Member, error)
 	Update(ctx context.Context, memberID uuid.UUID, req *domain.MemberUpdateRequest, staffBranch string) (*domain.Member, error)
-	List(ctx context.Context, staffBranch string, page, limit int) (*domain.MemberListResponse, error)
+	List(ctx context.Context, staffBranch, search string, page, limit int) (*domain.MemberListResponse, error)
 }
 
 type memberService struct {
@@ -28,6 +29,22 @@ func NewMemberService(memberRepo repository.MemberRepository) MemberService {
 }
 
 func (s *memberService) Create(ctx context.Context, req *domain.MemberCreateRequest, staffBranch, registeredByStaff string) (*domain.Member, error) {
+	lastMembershipNumber, err := s.memberRepo.GetLastMembershipNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	nextNumber := 1
+	if lastMembershipNumber != "" {
+		var currentNumber int
+		_, err := fmt.Sscanf(lastMembershipNumber, "MR-%d", &currentNumber)
+		if err == nil {
+			nextNumber = currentNumber + 1
+		}
+	}
+
+	membershipNumber := fmt.Sprintf("MR-%d", nextNumber)
+
 	member := &domain.Member{
 		ID:                        uuid.New(),
 		Name:                      req.Name,
@@ -38,7 +55,7 @@ func (s *memberService) Create(ctx context.Context, req *domain.MemberCreateRequ
 		Points1_5Liter:            0,
 		Branch:                    &staffBranch,
 		Status:                    "active",
-		MembershipNumber:          req.MembershipNumber,
+		MembershipNumber:          &membershipNumber,
 		RegistrationReceiptNumber: req.RegistrationReceiptNumber,
 		WelcomeBonusClaimed:       false,
 		RegisteredByStaff:         &registeredByStaff,
@@ -50,7 +67,7 @@ func (s *memberService) Create(ctx context.Context, req *domain.MemberCreateRequ
 		member.Branch = req.Branch
 	}
 
-	err := s.memberRepo.Create(ctx, member)
+	err = s.memberRepo.Create(ctx, member)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +120,7 @@ func (s *memberService) Update(ctx context.Context, memberID uuid.UUID, req *dom
 	return member, nil
 }
 
-func (s *memberService) List(ctx context.Context, staffBranch string, page, limit int) (*domain.MemberListResponse, error) {
+func (s *memberService) List(ctx context.Context, staffBranch, search string, page, limit int) (*domain.MemberListResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -111,7 +128,7 @@ func (s *memberService) List(ctx context.Context, staffBranch string, page, limi
 		limit = 20
 	}
 
-	members, total, err := s.memberRepo.List(ctx, &staffBranch, page, limit)
+	members, total, err := s.memberRepo.List(ctx, &staffBranch, search, page, limit)
 	if err != nil {
 		return nil, err
 	}

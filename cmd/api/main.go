@@ -87,7 +87,7 @@ func main() {
 			{
 				transactions.POST("", transactionHandler.Create)
 				transactions.GET("/member/:member_id", transactionHandler.ListByMember)
-				transactions.GET("/branch", transactionHandler.ListByBranch)
+				transactions.GET("/	", transactionHandler.ListByBranch)
 			}
 		}
 	}

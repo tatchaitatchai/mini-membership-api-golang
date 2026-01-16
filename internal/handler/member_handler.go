@@ -89,10 +89,11 @@ func (h *MemberHandler) Update(c *gin.Context) {
 func (h *MemberHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	search := c.Query("search")
 
 	claims := middleware.GetClaims(c)
 
-	resp, err := h.memberService.List(c.Request.Context(), claims.Branch, page, limit)
+	resp, err := h.memberService.List(c.Request.Context(), claims.Branch, search, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS member_point_transactions (
     id UUID PRIMARY KEY,
     member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
     staff_user_id UUID NOT NULL REFERENCES staff_users(id),
-    action VARCHAR(10) NOT NULL CHECK (action IN ('add', 'deduct', 'redeem', 'adjust')),
-    product_type VARCHAR(20) NOT NULL,
-    points INT NOT NULL,
+    action VARCHAR(10) NOT NULL CHECK (action IN ('EARN', 'REDEEM')),
+    product_type VARCHAR(20) NOT NULL CHECK (product_type IN ('1_0_LITER', '1_5_LITER')),
+    points INT NOT NULL CHECK (points > 0),
     receipt_text TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
