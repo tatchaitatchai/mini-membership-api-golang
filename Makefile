@@ -11,7 +11,7 @@ help:
 	@echo "  make docker-down  - Stop Docker containers"
 
 run:
-	go run cmd/api/main.go
+	CGO_ENABLED=0 go run cmd/api/main.go
 
 build:
 	go build -o bin/api cmd/api/main.go
@@ -23,10 +23,10 @@ clean:
 	rm -rf bin/
 
 migrate-up:
-	psql $(DATABASE_URL) -f migrations/001_initial_schema.sql
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/001_initial_schema.sql
 
 migrate-down:
-	psql $(DATABASE_URL) -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"
 
 docker-up:
 	docker-compose up -d
