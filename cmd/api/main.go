@@ -19,6 +19,8 @@ import (
 	"github.com/katom-membership/api/pkg/database"
 )
 
+const mobileSessionExpiration = 30 * 24 * time.Hour // 30 days
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -43,14 +45,20 @@ func main() {
 	staffUserRepo := repository.NewStaffUserRepository(db)
 	memberRepo := repository.NewMemberRepository(db)
 	transactionRepo := repository.NewTransactionRepository(db)
+	appAuthRepo := repository.NewAppAuthRepository(db)
+	shiftRepo := repository.NewShiftRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
 	transactionService := service.NewTransactionService(transactionRepo, memberRepo)
+	appAuthService := service.NewAppAuthService(appAuthRepo, mobileSessionExpiration)
+	shiftService := service.NewShiftService(shiftRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
+	appAuthHandler := handler.NewAppAuthHandler(appAuthService)
+	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -89,6 +97,30 @@ func main() {
 				transactions.GET("/member/:member_id", transactionHandler.ListByMember)
 				transactions.GET("/branch", transactionHandler.ListByBranch)
 			}
+		}
+	}
+
+	mobileV1 := router.Group("/api/v2")
+	{
+		mobileAuth := mobileV1.Group("/auth")
+		{
+			mobileAuth.POST("/login", appAuthHandler.LoginStore)
+			mobileAuth.POST("/register", appAuthHandler.RegisterBusiness)
+			mobileAuth.POST("/verify-pin", appAuthHandler.VerifyPin)
+			mobileAuth.GET("/session", appAuthHandler.ValidateSession)
+			mobileAuth.POST("/logout", appAuthHandler.Logout)
+		}
+
+		branches := mobileV1.Group("/branches")
+		{
+			branches.GET("", shiftHandler.ListBranches)
+			branches.POST("/select", shiftHandler.SelectBranch)
+		}
+
+		shifts := mobileV1.Group("/shifts")
+		{
+			shifts.POST("/open", shiftHandler.OpenShift)
+			shifts.GET("/current", shiftHandler.GetCurrentShift)
 		}
 	}
 
