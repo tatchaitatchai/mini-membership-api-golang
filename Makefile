@@ -1,4 +1,4 @@
-.PHONY: help run build test clean migrate-up migrate-down docker-up docker-down
+.PHONY: help run build test clean migrate-up migrate-down migrate-schema migrate-seed migrate-all docker-up docker-down
 
 help:
 	@echo "Available commands:"
@@ -24,6 +24,25 @@ clean:
 
 migrate-up:
 	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/001_initial_schema.sql
+
+migrate-schema:
+	@echo "Running schema migration (002)..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
+	@echo "Running schema additions (003)..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
+	@echo "Schema migration complete!"
+
+migrate-seed:
+	@echo "Running seed data (004)..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	@echo "Seed data complete!"
+
+migrate-all:
+	@echo "Running all migrations (002-004)..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	@echo "All migrations complete!"
 
 migrate-down:
 	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"
