@@ -13,12 +13,14 @@ import (
 type OrderHandler struct {
 	orderService   service.OrderService
 	appAuthService service.AppAuthService
+	shiftService   service.ShiftService
 }
 
-func NewOrderHandler(orderService service.OrderService, appAuthService service.AppAuthService) *OrderHandler {
+func NewOrderHandler(orderService service.OrderService, appAuthService service.AppAuthService, shiftService service.ShiftService) *OrderHandler {
 	return &OrderHandler{
 		orderService:   orderService,
 		appAuthService: appAuthService,
+		shiftService:   shiftService,
 	}
 }
 
@@ -112,9 +114,16 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	// Get current shift
-	shiftID := int64(0)
-	// Note: In production, you should get the active shift from the shift service
-	// For now, we'll use a placeholder or get it from session if available
+	currentShift, err := h.shiftService.GetCurrentShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !currentShift.HasActiveShift || currentShift.Shift == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no active shift, please open a shift first"})
+		return
+	}
+	shiftID := currentShift.Shift.ID
 
 	staffID := int64(0)
 	if sessionInfo.StaffID != nil {

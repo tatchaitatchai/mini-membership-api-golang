@@ -61,7 +61,7 @@ func main() {
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	appAuthHandler := handler.NewAppAuthHandler(appAuthService)
 	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
-	orderHandler := handler.NewOrderHandler(orderService, appAuthService)
+	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
