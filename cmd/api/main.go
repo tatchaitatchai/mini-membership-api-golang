@@ -47,18 +47,21 @@ func main() {
 	transactionRepo := repository.NewTransactionRepository(db)
 	appAuthRepo := repository.NewAppAuthRepository(db)
 	shiftRepo := repository.NewShiftRepository(db)
+	orderRepo := repository.NewOrderRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
 	transactionService := service.NewTransactionService(transactionRepo, memberRepo)
 	appAuthService := service.NewAppAuthService(appAuthRepo, mobileSessionExpiration)
 	shiftService := service.NewShiftService(shiftRepo)
+	orderService := service.NewOrderService(orderRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	appAuthHandler := handler.NewAppAuthHandler(appAuthService)
 	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
+	orderHandler := handler.NewOrderHandler(orderService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -121,6 +124,23 @@ func main() {
 		{
 			shifts.POST("/open", shiftHandler.OpenShift)
 			shifts.GET("/current", shiftHandler.GetCurrentShift)
+		}
+
+		products := mobileV1.Group("/products")
+		{
+			products.GET("", orderHandler.ListProducts)
+		}
+
+		customers := mobileV1.Group("/customers")
+		{
+			customers.GET("/search", orderHandler.SearchCustomers)
+		}
+
+		orders := mobileV1.Group("/orders")
+		{
+			orders.POST("", orderHandler.CreateOrder)
+			orders.GET("", orderHandler.GetOrdersByShift)
+			orders.GET("/:id", orderHandler.GetOrderByID)
 		}
 	}
 

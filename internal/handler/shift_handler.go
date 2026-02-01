@@ -128,7 +128,7 @@ func (h *ShiftHandler) GetCurrentShift(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.shiftService.GetCurrentShift(c.Request.Context(), *sessionInfo.BranchID)
+	resp, err := h.shiftService.GetCurrentShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

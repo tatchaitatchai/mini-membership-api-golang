@@ -19,8 +19,8 @@ type AppAuthRepository interface {
 	UpdateSessionLastSeen(ctx context.Context, token string) error
 	RevokeSession(ctx context.Context, token string) error
 	GetStoreByID(ctx context.Context, storeID int64) (*models.Store, error)
-	GetBranchByID(ctx context.Context, branchID int64) (*models.Branch, error)
-	GetStaffByID(ctx context.Context, staffID int64) (*models.StaffAccount, error)
+	GetBranchByID(ctx context.Context, storeID, branchID int64) (*models.Branch, error)
+	GetStaffByID(ctx context.Context, storeID, staffID int64) (*models.StaffAccount, error)
 	GetStaffByPinAndStore(ctx context.Context, pinHash string, storeID int64) (*models.StaffAccount, error)
 	CreateStore(ctx context.Context, store *models.Store) (int64, error)
 	CreateStaffAccount(ctx context.Context, staff *models.StaffAccount) (int64, error)
@@ -131,10 +131,10 @@ func (r *appAuthRepository) GetStoreByID(ctx context.Context, storeID int64) (*m
 	return &store, nil
 }
 
-func (r *appAuthRepository) GetBranchByID(ctx context.Context, branchID int64) (*models.Branch, error) {
+func (r *appAuthRepository) GetBranchByID(ctx context.Context, storeID, branchID int64) (*models.Branch, error) {
 	var branch models.Branch
-	query := `SELECT id, store_id, branch_name, is_shift_opened, shift_opened_at, shift_closed_at, is_active, created_at, updated_at FROM branches WHERE id = $1`
-	err := r.db.GetContext(ctx, &branch, query, branchID)
+	query := `SELECT id, store_id, branch_name, is_shift_opened, shift_opened_at, shift_closed_at, is_active, created_at, updated_at FROM branches WHERE id = $1 AND store_id = $2`
+	err := r.db.GetContext(ctx, &branch, query, branchID, storeID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -144,10 +144,10 @@ func (r *appAuthRepository) GetBranchByID(ctx context.Context, branchID int64) (
 	return &branch, nil
 }
 
-func (r *appAuthRepository) GetStaffByID(ctx context.Context, staffID int64) (*models.StaffAccount, error) {
+func (r *appAuthRepository) GetStaffByID(ctx context.Context, storeID, staffID int64) (*models.StaffAccount, error) {
 	var staff models.StaffAccount
-	query := `SELECT id, store_id, branch_id, email, password_hash, pin_hash, is_active, is_store_master, is_working, created_at, updated_at FROM staff_accounts WHERE id = $1`
-	err := r.db.GetContext(ctx, &staff, query, staffID)
+	query := `SELECT id, store_id, branch_id, email, password_hash, pin_hash, is_active, is_store_master, is_working, created_at, updated_at FROM staff_accounts WHERE id = $1 AND store_id = $2`
+	err := r.db.GetContext(ctx, &staff, query, staffID, storeID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

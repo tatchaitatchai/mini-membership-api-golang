@@ -12,11 +12,11 @@ import (
 
 type ShiftRepository interface {
 	GetBranchesByStoreID(ctx context.Context, storeID int64) ([]models.Branch, error)
-	GetBranchByID(ctx context.Context, branchID int64) (*models.Branch, error)
-	UpdateSessionBranch(ctx context.Context, sessionToken string, branchID int64) error
-	GetActiveShiftByBranch(ctx context.Context, branchID int64) (*models.Shift, error)
+	GetBranchByID(ctx context.Context, storeID, branchID int64) (*models.Branch, error)
+	UpdateSessionBranch(ctx context.Context, sessionToken string, storeID, branchID int64) error
+	GetActiveShiftByBranch(ctx context.Context, storeID, branchID int64) (*models.Shift, error)
 	CreateShift(ctx context.Context, shift *models.Shift) error
-	UpdateBranchShiftStatus(ctx context.Context, branchID int64, isOpened bool) error
+	UpdateBranchShiftStatus(ctx context.Context, storeID, branchID int64, isOpened bool) error
 }
 
 type shiftRepository struct {
@@ -42,14 +42,14 @@ func (r *shiftRepository) GetBranchesByStoreID(ctx context.Context, storeID int6
 	return branches, nil
 }
 
-func (r *shiftRepository) GetBranchByID(ctx context.Context, branchID int64) (*models.Branch, error) {
+func (r *shiftRepository) GetBranchByID(ctx context.Context, storeID, branchID int64) (*models.Branch, error) {
 	var branch models.Branch
 	query := `
 		SELECT id, store_id, branch_name, is_shift_opened, shift_opened_at, shift_closed_at, is_active, created_at, updated_at
 		FROM branches
-		WHERE id = $1
+		WHERE id = $1 AND store_id = $2
 	`
-	err := r.db.GetContext(ctx, &branch, query, branchID)
+	err := r.db.GetContext(ctx, &branch, query, branchID, storeID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -59,22 +59,22 @@ func (r *shiftRepository) GetBranchByID(ctx context.Context, branchID int64) (*m
 	return &branch, nil
 }
 
-func (r *shiftRepository) UpdateSessionBranch(ctx context.Context, sessionToken string, branchID int64) error {
-	query := `UPDATE app_sessions SET branch_id = $1, last_seen_at = $2 WHERE session_token = $3`
-	_, err := r.db.ExecContext(ctx, query, branchID, time.Now(), sessionToken)
+func (r *shiftRepository) UpdateSessionBranch(ctx context.Context, sessionToken string, storeID, branchID int64) error {
+	query := `UPDATE app_sessions SET branch_id = $1, last_seen_at = $2 WHERE session_token = $3 AND store_id = $4`
+	_, err := r.db.ExecContext(ctx, query, branchID, time.Now(), sessionToken, storeID)
 	return err
 }
 
-func (r *shiftRepository) GetActiveShiftByBranch(ctx context.Context, branchID int64) (*models.Shift, error) {
+func (r *shiftRepository) GetActiveShiftByBranch(ctx context.Context, storeID, branchID int64) (*models.Shift, error) {
 	var shift models.Shift
 	query := `
 		SELECT id, store_id, branch_id, start_money_inbox, end_money_inbox, started_at, ended_at, is_active_shift, opened_by, closed_by, created_at, updated_at
 		FROM shifts
-		WHERE branch_id = $1 AND is_active_shift = true
+		WHERE branch_id = $1 AND store_id = $2 AND is_active_shift = true
 		ORDER BY started_at DESC
 		LIMIT 1
 	`
-	err := r.db.GetContext(ctx, &shift, query, branchID)
+	err := r.db.GetContext(ctx, &shift, query, branchID, storeID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -103,14 +103,14 @@ func (r *shiftRepository) CreateShift(ctx context.Context, shift *models.Shift) 
 	).Scan(&shift.ID)
 }
 
-func (r *shiftRepository) UpdateBranchShiftStatus(ctx context.Context, branchID int64, isOpened bool) error {
+func (r *shiftRepository) UpdateBranchShiftStatus(ctx context.Context, storeID, branchID int64, isOpened bool) error {
 	var query string
 	if isOpened {
-		query = `UPDATE branches SET is_shift_opened = true, shift_opened_at = $1 WHERE id = $2`
+		query = `UPDATE branches SET is_shift_opened = true, shift_opened_at = $1 WHERE id = $2 AND store_id = $3`
 	} else {
-		query = `UPDATE branches SET is_shift_opened = false, shift_closed_at = $1 WHERE id = $2`
+		query = `UPDATE branches SET is_shift_opened = false, shift_closed_at = $1 WHERE id = $2 AND store_id = $3`
 	}
-	_, err := r.db.ExecContext(ctx, query, time.Now(), branchID)
+	_, err := r.db.ExecContext(ctx, query, time.Now(), branchID, storeID)
 	return err
 }
 
@@ -157,7 +157,7 @@ func (r *shiftRepository) OpenShiftTx(ctx context.Context, storeID, branchID int
 	}
 
 	// Update branch shift status
-	_, err = tx.ExecContext(ctx, `UPDATE branches SET is_shift_opened = true, shift_opened_at = $1 WHERE id = $2`, now, branchID)
+	_, err = tx.ExecContext(ctx, `UPDATE branches SET is_shift_opened = true, shift_opened_at = $1 WHERE id = $2 AND store_id = $3`, now, branchID, storeID)
 	if err != nil {
 		return nil, err
 	}

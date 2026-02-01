@@ -12,6 +12,7 @@ type AppLoginRequest struct {
 type AppLoginResponse struct {
 	SessionToken string    `json:"session_token"`
 	StoreID      int64     `json:"store_id"`
+	BranchID     *int64    `json:"branch_id,omitempty"`
 	StoreName    string    `json:"store_name"`
 	ExpiresAt    time.Time `json:"expires_at"`
 }

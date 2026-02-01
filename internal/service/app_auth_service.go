@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/katom-membership/api/internal/domain"
@@ -73,16 +74,29 @@ func (s *appAuthService) LoginStore(ctx context.Context, req *domain.AppLoginReq
 		LastSeenAt:   now,
 	}
 
+	// Set branch_id if staff has assigned branch
+	if staff.BranchID.Valid {
+		session.BranchID = staff.BranchID
+	}
+
 	if err := s.repo.CreateSession(ctx, session); err != nil {
 		return nil, err
 	}
 
-	return &domain.AppLoginResponse{
+	fmt.Println("Token: ", token)
+
+	resp := &domain.AppLoginResponse{
 		SessionToken: token,
 		StoreID:      store.ID,
 		StoreName:    store.StoreName,
 		ExpiresAt:    now.Add(s.sessionExpiration),
-	}, nil
+	}
+
+	if staff.BranchID.Valid {
+		resp.BranchID = &staff.BranchID.Int64
+	}
+
+	return resp, nil
 }
 
 func (s *appAuthService) ValidateSession(ctx context.Context, token string) (*domain.AppSessionInfo, error) {
@@ -119,7 +133,7 @@ func (s *appAuthService) ValidateSession(ctx context.Context, token string) (*do
 
 	// Add branch info if available
 	if session.BranchID.Valid {
-		branch, err := s.repo.GetBranchByID(ctx, session.BranchID.Int64)
+		branch, err := s.repo.GetBranchByID(ctx, session.StoreID, session.BranchID.Int64)
 		if err == nil && branch != nil {
 			info.BranchID = &branch.ID
 			info.BranchName = &branch.BranchName
@@ -128,7 +142,7 @@ func (s *appAuthService) ValidateSession(ctx context.Context, token string) (*do
 
 	// Add staff info if available
 	if session.StaffID.Valid {
-		staff, err := s.repo.GetStaffByID(ctx, session.StaffID.Int64)
+		staff, err := s.repo.GetStaffByID(ctx, session.StoreID, session.StaffID.Int64)
 		if err == nil && staff != nil {
 			info.StaffID = &staff.ID
 			if staff.Email.Valid {
@@ -149,8 +163,12 @@ func (s *appAuthService) VerifyPin(ctx context.Context, token string, req *domai
 		return nil, errors.New("invalid session")
 	}
 
+	fmt.Println("Pin :: ", req.Pin)
+
 	// Hash the PIN for comparison
 	pinHash := hashPin(req.Pin)
+
+	fmt.Println("Pin Hash :: ", pinHash)
 
 	staff, err := s.repo.GetStaffByPinAndStore(ctx, pinHash, session.StoreID)
 	if err != nil {

@@ -16,7 +16,7 @@ type ShiftService interface {
 	ListBranches(ctx context.Context, storeID int64) (*domain.ListBranchesResponse, error)
 	SelectBranch(ctx context.Context, sessionToken string, storeID int64, req *domain.SelectBranchRequest) (*domain.SelectBranchResponse, error)
 	OpenShift(ctx context.Context, sessionToken string, storeID int64, branchID int64, staffID *int64, req *domain.OpenShiftRequest) (*domain.OpenShiftResponse, error)
-	GetCurrentShift(ctx context.Context, branchID int64) (*domain.CurrentShiftResponse, error)
+	GetCurrentShift(ctx context.Context, storeID, branchID int64) (*domain.CurrentShiftResponse, error)
 }
 
 type shiftService struct {
@@ -46,19 +46,16 @@ func (s *shiftService) ListBranches(ctx context.Context, storeID int64) (*domain
 }
 
 func (s *shiftService) SelectBranch(ctx context.Context, sessionToken string, storeID int64, req *domain.SelectBranchRequest) (*domain.SelectBranchResponse, error) {
-	branch, err := s.repo.GetBranchByID(ctx, req.BranchID)
+	branch, err := s.repo.GetBranchByID(ctx, storeID, req.BranchID)
 	if err != nil {
 		return nil, err
 	}
 	if branch == nil {
 		return nil, errors.New("branch not found")
 	}
-	if branch.StoreID != storeID {
-		return nil, errors.New("branch does not belong to this store")
-	}
 
 	// Update session with selected branch
-	if err := s.repo.UpdateSessionBranch(ctx, sessionToken, req.BranchID); err != nil {
+	if err := s.repo.UpdateSessionBranch(ctx, sessionToken, storeID, req.BranchID); err != nil {
 		return nil, err
 	}
 
@@ -71,15 +68,12 @@ func (s *shiftService) SelectBranch(ctx context.Context, sessionToken string, st
 
 func (s *shiftService) OpenShift(ctx context.Context, sessionToken string, storeID int64, branchID int64, staffID *int64, req *domain.OpenShiftRequest) (*domain.OpenShiftResponse, error) {
 	// Verify branch exists and belongs to store
-	branch, err := s.repo.GetBranchByID(ctx, branchID)
+	branch, err := s.repo.GetBranchByID(ctx, storeID, branchID)
 	if err != nil {
 		return nil, err
 	}
 	if branch == nil {
 		return nil, errors.New("branch not found")
-	}
-	if branch.StoreID != storeID {
-		return nil, errors.New("branch does not belong to this store")
 	}
 
 	// Check if shift is already open
@@ -107,7 +101,7 @@ func (s *shiftService) OpenShift(ctx context.Context, sessionToken string, store
 	}
 
 	// Update branch shift status
-	if err := s.repo.UpdateBranchShiftStatus(ctx, branchID, true); err != nil {
+	if err := s.repo.UpdateBranchShiftStatus(ctx, storeID, branchID, true); err != nil {
 		return nil, err
 	}
 
@@ -120,8 +114,8 @@ func (s *shiftService) OpenShift(ctx context.Context, sessionToken string, store
 	}, nil
 }
 
-func (s *shiftService) GetCurrentShift(ctx context.Context, branchID int64) (*domain.CurrentShiftResponse, error) {
-	branch, err := s.repo.GetBranchByID(ctx, branchID)
+func (s *shiftService) GetCurrentShift(ctx context.Context, storeID, branchID int64) (*domain.CurrentShiftResponse, error) {
+	branch, err := s.repo.GetBranchByID(ctx, storeID, branchID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +123,7 @@ func (s *shiftService) GetCurrentShift(ctx context.Context, branchID int64) (*do
 		return nil, errors.New("branch not found")
 	}
 
-	shift, err := s.repo.GetActiveShiftByBranch(ctx, branchID)
+	shift, err := s.repo.GetActiveShiftByBranch(ctx, storeID, branchID)
 	if err != nil {
 		return nil, err
 	}

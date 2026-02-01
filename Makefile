@@ -11,7 +11,7 @@ help:
 	@echo "  make docker-down  - Stop Docker containers"
 
 run:
-	CGO_ENABLED=0 go run cmd/api/main.go
+	./dev.sh
 
 build:
 	go build -o bin/api cmd/api/main.go
