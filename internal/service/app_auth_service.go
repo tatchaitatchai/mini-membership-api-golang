@@ -74,7 +74,6 @@ func (s *appAuthService) LoginStore(ctx context.Context, req *domain.AppLoginReq
 		LastSeenAt:   now,
 	}
 
-	// Set branch_id if staff has assigned branch
 	if staff.BranchID.Valid {
 		session.BranchID = staff.BranchID
 	}
@@ -82,8 +81,6 @@ func (s *appAuthService) LoginStore(ctx context.Context, req *domain.AppLoginReq
 	if err := s.repo.CreateSession(ctx, session); err != nil {
 		return nil, err
 	}
-
-	fmt.Println("Token: ", token)
 
 	resp := &domain.AppLoginResponse{
 		SessionToken: token,
