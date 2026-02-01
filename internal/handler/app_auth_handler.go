@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/katom-membership/api/internal/domain"
 	"github.com/katom-membership/api/internal/service"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AppAuthHandler struct {
@@ -122,4 +125,32 @@ func extractToken(c *gin.Context) string {
 	}
 
 	return parts[1]
+}
+
+// GenerateHash generates both SHA256 (for PIN) and bcrypt (for password) hashes
+func (h *AppAuthHandler) GenerateHash(c *gin.Context) {
+	var req struct {
+		Value string `json:"value" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// SHA256 hash (for PIN)
+	sha256Hash := sha256.Sum256([]byte(req.Value))
+	sha256Hex := hex.EncodeToString(sha256Hash[:])
+
+	// bcrypt hash (for password)
+	bcryptHash, err := bcrypt.GenerateFromPassword([]byte(req.Value), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"value":       req.Value,
+		"sha256_hash": sha256Hex,
+		"bcrypt_hash": string(bcryptHash),
+	})
 }

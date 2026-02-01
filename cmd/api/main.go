@@ -112,6 +112,7 @@ func main() {
 			mobileAuth.POST("/verify-pin", appAuthHandler.VerifyPin)
 			mobileAuth.GET("/session", appAuthHandler.ValidateSession)
 			mobileAuth.POST("/logout", appAuthHandler.Logout)
+			mobileAuth.POST("/generate-hash", appAuthHandler.GenerateHash)
 		}
 
 		branches := mobileV1.Group("/branches")

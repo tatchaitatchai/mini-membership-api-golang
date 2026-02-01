@@ -31,23 +31,23 @@ SELECT setval('branches_id_seq', 4);
 -- 3) Staff Accounts
 --    - Manager: branch_id = NULL, is_store_master = true
 --    - Staff: branch_id = assigned branch
---    Password: 'password123' -> bcrypt hash
---    PIN: '1234' -> bcrypt hash
+--    Password: '123456' -> bcrypt hash
+--    PIN: '1234' -> SHA256 hash
 -- =========================================================
 INSERT INTO staff_accounts (id, store_id, branch_id, email, password_hash, pin_hash, is_store_master) VALUES
   -- Store 1: Manager (no branch)
-  (1, 1, NULL, 'manager@katom.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', true),
+  (1, 1, NULL, 'manager@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', true),
   -- Store 1: Staff for branch 1 (สาขาสยาม)
-  (2, 1, 1, NULL, 'em1@katom.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', false),
+  (2, 1, 1, NULL, NULL, '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
   -- Store 1: Staff for branch 2 (สาขาลาดพร้าว)
-  (3, 1, 2, NULL, 'em2@katom.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', false),
+  (3, 1, 2, NULL, NULL, '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
   
   -- Store 2: Manager (no branch)
-  (4, 2, NULL, 'manager@sweetme.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', true),
+  (4, 2, NULL, 'manager@sweetme.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', true),
   -- Store 2: Staff for branch 3 (สาขาเซ็นทรัล)
-  (5, 2, 3, NULL, 'em3@katom.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', false),
+  (5, 2, 3, NULL, NULL, '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
   -- Store 2: Staff for branch 4 (สาขาเมกาบางนา)
-  (6, 2, 4, NULL, 'em4@katom.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J1lYS6Xq6Qp5c6Xq6Qp5c6Xq6Qp5c6', false);
+  (6, 2, 4, NULL, NULL, '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false);
 
 SELECT setval('staff_accounts_id_seq', 6);
 
@@ -109,6 +109,21 @@ INSERT INTO branch_products (store_id, branch_id, product_id, on_stock, reorder_
   (2, 4, 6, 40, 5),
   (2, 4, 7, 150, 20),
   (2, 4, 8, 150, 20);
+
+-- =========================================================
+-- 7) Customers (2 per store = 4 total)
+--    PIN: '1234' -> SHA256: 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
+--    PIN: '1231' -> SHA256: 52a6eb687cd22e80d3342eac6fcc7f2e19209e8f83eb9b82e81c6f3e6f30743b
+-- =========================================================
+INSERT INTO customers (id, store_id, customer_code, full_name, phone, phone_last4) VALUES
+  -- Store 1: ร้านกาแฟ คาทอม
+  (1, 1, 'CUST-001', 'สมชาย ใจดี', '0812345678', '5678'),
+  (2, 1, 'CUST-002', 'สมหญิง รักสวย', '0898765432', '5432'),
+  -- Store 2: ร้านขนมหวาน สวีทมี
+  (3, 2, 'CUST-003', 'วิชัย มั่งมี', '0856781234', '1234'),
+  (4, 2, 'CUST-004', 'วิภา สุขใจ', '0843219876', '9876');
+
+SELECT setval('customers_id_seq', 4);
 
 COMMIT;
 
