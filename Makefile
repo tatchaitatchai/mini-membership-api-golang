@@ -1,4 +1,4 @@
-.PHONY: help run build test clean migrate-up migrate-down migrate-schema migrate-seed migrate-all docker-up docker-down
+.PHONY: help run build test clean migrate-up migrate-down migrate-schema migrate-seed migrate-all migrate-reset docker-up docker-down
 
 help:
 	@echo "Available commands:"
@@ -43,6 +43,15 @@ migrate-all:
 	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
 	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
 	@echo "All migrations complete!"
+
+migrate-reset:
+	@echo "Dropping all tables and re-running migrations..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO katom; GRANT ALL ON SCHEMA public TO public;"
+	@echo "All tables dropped. Running migrations..."
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
+	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	@echo "Database reset complete!"
 
 migrate-down:
 	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"

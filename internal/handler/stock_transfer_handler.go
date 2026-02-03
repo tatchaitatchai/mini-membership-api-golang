@@ -180,18 +180,21 @@ func (h *StockTransferHandler) ReceiveTransfer(c *gin.Context) {
 
 	transferID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transfer ID"})
 		return
 	}
 
 	var req domain.UpdateStockTransferRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	err = h.stockTransferService.ReceiveTransfer(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID, transferID, *sessionInfo.StaffID, req.Items)
 	if err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

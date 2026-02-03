@@ -262,7 +262,7 @@ func (r *stockTransferRepository) GetPendingTransfers(ctx context.Context, store
 		JOIN branches tb ON st.to_branch_id = tb.id
 		LEFT JOIN staff_accounts ss ON st.sent_by = ss.id
 		LEFT JOIN staff_accounts rs ON st.received_by = rs.id
-		WHERE st.store_id = $1 AND st.to_branch_id = $2 AND st.status = 'SENT'
+		WHERE st.store_id = $1 AND st.to_branch_id = $2 AND st.status IN ('CREATED', 'SENT')
 		ORDER BY st.created_at DESC
 	`, storeID, branchID)
 	if err != nil {

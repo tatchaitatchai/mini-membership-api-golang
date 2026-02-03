@@ -50,6 +50,7 @@ func main() {
 	orderRepo := repository.NewOrderRepository(db)
 	promotionRepo := repository.NewPromotionRepository(db)
 	stockTransferRepo := repository.NewStockTransferRepository(db)
+	inventoryRepo := repository.NewInventoryRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
@@ -59,6 +60,7 @@ func main() {
 	orderService := service.NewOrderService(orderRepo)
 	promotionService := service.NewPromotionService(promotionRepo)
 	stockTransferService := service.NewStockTransferService(stockTransferRepo)
+	inventoryService := service.NewInventoryService(inventoryRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
@@ -68,6 +70,7 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService)
 	promotionHandler := handler.NewPromotionHandler(promotionService, appAuthService)
 	stockTransferHandler := handler.NewStockTransferHandler(stockTransferService, appAuthService)
+	inventoryHandler := handler.NewInventoryHandler(inventoryService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -168,6 +171,13 @@ func main() {
 			stockTransfers.GET("/:id", stockTransferHandler.GetTransfer)
 			stockTransfers.POST("/:id/receive", stockTransferHandler.ReceiveTransfer)
 			stockTransfers.POST("/:id/cancel", stockTransferHandler.CancelTransfer)
+		}
+
+		inventory := mobileV1.Group("/inventory")
+		{
+			inventory.POST("/adjust", inventoryHandler.AdjustStock)
+			inventory.GET("/movements", inventoryHandler.GetMovements)
+			inventory.GET("/low-stock", inventoryHandler.GetLowStockItems)
 		}
 	}
 

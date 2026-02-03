@@ -58,11 +58,11 @@ type StockTransferResponse struct {
 
 // StockTransferItemResponse represents an item with product details
 type StockTransferItemResponse struct {
-	ID           int64   `json:"id"`
-	ProductID    int64   `json:"product_id"`
-	ProductName  string  `json:"product_name"`
-	SendCount    int     `json:"send_count"`
-	ReceiveCount int     `json:"receive_count"`
+	ID           int64  `json:"id"`
+	ProductID    int64  `json:"product_id"`
+	ProductName  string `json:"product_name"`
+	SendCount    int    `json:"send_count"`
+	ReceiveCount int    `json:"receive_count"`
 }
 
 // CreateStockTransferRequest represents a request to create a stock transfer
@@ -81,8 +81,8 @@ type CreateStockTransferItemInput struct {
 
 // UpdateStockTransferRequest represents a request to update transfer status
 type UpdateStockTransferRequest struct {
-	Status StockTransferStatus              `json:"status" binding:"required"`
-	Items  []UpdateStockTransferItemInput   `json:"items,omitempty"`
+	Status StockTransferStatus            `json:"status,omitempty"`
+	Items  []UpdateStockTransferItemInput `json:"items,omitempty"`
 }
 
 // UpdateStockTransferItemInput represents an item input for receiving

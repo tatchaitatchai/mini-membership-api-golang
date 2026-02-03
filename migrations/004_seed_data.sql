@@ -93,17 +93,17 @@ INSERT INTO branch_products (store_id, branch_id, product_id, on_stock, reorder_
   (1, 1, 2, 100, 10),
   (1, 1, 3, 100, 10),
   (1, 1, 4, 100, 10),
-  -- Store 1, Branch 2 (สาขาลาดพร้าว) - all 4 products
-  (1, 2, 1, 80, 10),
-  (1, 2, 2, 80, 10),
+  -- Store 1, Branch 2 (สาขาลาดพร้าว) - all 4 products (some low stock for testing)
+  (1, 2, 1, 5, 10),   -- LOW: อเมริกาโน่ร้อน สต็อก 5 < เกณฑ์ 10
+  (1, 2, 2, 0, 10),   -- CRITICAL: ลาเต้ร้อน หมด!
   (1, 2, 3, 80, 10),
-  (1, 2, 4, 80, 10),
+  (1, 2, 4, 8, 10),   -- LOW: ลาเต้เย็น สต็อก 8 < เกณฑ์ 10
   
-  -- Store 2, Branch 3 (สาขาเซ็นทรัล) - all 4 products
-  (2, 3, 5, 50, 5),
-  (2, 3, 6, 50, 5),
+  -- Store 2, Branch 3 (สาขาเซ็นทรัล) - all 4 products (some low stock for testing)
+  (2, 3, 5, 3, 5),    -- LOW: ช็อกโกแลตเค้ก สต็อก 3 < เกณฑ์ 5
+  (2, 3, 6, 0, 5),    -- CRITICAL: สตรอว์เบอร์รี่ชีสเค้ก หมด!
   (2, 3, 7, 200, 20),
-  (2, 3, 8, 200, 20),
+  (2, 3, 8, 15, 20),  -- LOW: ไอศกรีมช็อกโกแลต สต็อก 15 < เกณฑ์ 20
   -- Store 2, Branch 4 (สาขาเมกาบางนา) - all 4 products
   (2, 4, 5, 40, 5),
   (2, 4, 6, 40, 5),
@@ -268,6 +268,48 @@ INSERT INTO promotion_products (promotion_id, product_id) VALUES
   
   -- Promotion 8: ไอศกรีม 2 ถ้วย ลด 20 บาท -> ไอศกรีมทั้ง 2 รส (7, 8)
   (8, 7), (8, 8);
+
+-- =========================================================
+-- 13) Stock Transfers (pending transfers for testing)
+--     Status: SENT = รอสาขารับสินค้า
+-- =========================================================
+INSERT INTO stock_transfers (id, store_id, from_branch_id, to_branch_id, status, sent_by, sent_at, note, created_at, updated_at) VALUES
+  -- Store 1: ส่งสินค้าจากส่วนกลาง (NULL) ไปสาขาสยาม (1) - กำลังส่ง
+  (1, 1, NULL, 1, 'SENT', 1, NOW() - INTERVAL '1 day', 'ส่งสินค้าเติมสต็อกประจำสัปดาห์', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'),
+  -- Store 1: ส่งสินค้าจากสาขาลาดพร้าว (2) ไปสาขาสยาม (1) - กำลังส่ง
+  (2, 1, 2, 1, 'SENT', 1, NOW() - INTERVAL '12 hours', 'โอนสินค้าระหว่างสาขา', NOW() - INTERVAL '1 day', NOW() - INTERVAL '12 hours'),
+  -- Store 2: ส่งสินค้าจากส่วนกลาง (NULL) ไปสาขาเซ็นทรัล (3) - กำลังส่ง
+  (3, 2, NULL, 3, 'SENT', 4, NOW() - INTERVAL '6 hours', 'เติมสต็อกเค้กและไอศกรีม', NOW() - INTERVAL '1 day', NOW() - INTERVAL '6 hours'),
+  -- Store 1: เบิกสินค้าใหม่ไปสาขาสยาม (1) - รอส่ง
+  (4, 1, NULL, 1, 'CREATED', NULL, NULL, 'เบิกสินค้าเพิ่มเติม', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '3 hours'),
+  -- Store 2: เบิกสินค้าใหม่ไปสาขาเซ็นทรัล (3) - รอส่ง
+  (5, 2, NULL, 3, 'CREATED', NULL, NULL, 'เบิกไอศกรีมเพิ่ม', NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour');
+
+SELECT setval('stock_transfers_id_seq', 5);
+
+-- =========================================================
+-- 14) Stock Transfer Items (items in each transfer)
+-- =========================================================
+INSERT INTO stock_transfer_items (id, stock_transfer_id, product_id, send_count, receive_count) VALUES
+  -- Transfer 1: ส่งไปสาขาสยาม (อเมริกาโน่ร้อน, ลาเต้ร้อน) - กำลังส่ง
+  (1, 1, 1, 50, 0),  -- อเมริกาโน่ร้อน 50 ชิ้น
+  (2, 1, 2, 30, 0),  -- ลาเต้ร้อน 30 ชิ้น
+  -- Transfer 2: โอนจากลาดพร้าวไปสยาม (อเมริกาโน่เย็น, ลาเต้เย็น) - กำลังส่ง
+  (3, 2, 3, 20, 0),  -- อเมริกาโน่เย็น 20 ชิ้น
+  (4, 2, 4, 15, 0),  -- ลาเต้เย็น 15 ชิ้น
+  -- Transfer 3: ส่งไปสาขาเซ็นทรัล (เค้ก, ไอศกรีม) - กำลังส่ง
+  (5, 3, 5, 10, 0),  -- ช็อกโกแลตเค้ก 10 ชิ้น
+  (6, 3, 6, 10, 0),  -- สตรอว์เบอร์รี่ชีสเค้ก 10 ชิ้น
+  (7, 3, 7, 50, 0),  -- ไอศกรีมวานิลลา 50 ชิ้น
+  (8, 3, 8, 50, 0),  -- ไอศกรีมช็อกโกแลต 50 ชิ้น
+  -- Transfer 4: เบิกสินค้าเพิ่มเติมไปสาขาสยาม - รอส่ง
+  (9, 4, 1, 25, 0),  -- อเมริกาโน่ร้อน 25 ชิ้น
+  (10, 4, 3, 25, 0), -- อเมริกาโน่เย็น 25 ชิ้น
+  -- Transfer 5: เบิกไอศกรีมเพิ่มไปสาขาเซ็นทรัล - รอส่ง
+  (11, 5, 7, 100, 0), -- ไอศกรีมวานิลลา 100 ชิ้น
+  (12, 5, 8, 100, 0); -- ไอศกรีมช็อกโกแลต 100 ชิ้น
+
+SELECT setval('stock_transfer_items_id_seq', 12);
 
 COMMIT;
 
