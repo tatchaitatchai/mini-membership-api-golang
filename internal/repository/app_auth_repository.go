@@ -40,7 +40,7 @@ func (r *appAuthRepository) GetStaffByEmail(ctx context.Context, email string) (
 	query := `
 		SELECT id, store_id, branch_id, email, password_hash, pin_hash, is_active, is_store_master, is_working, created_at, updated_at
 		FROM staff_accounts
-		WHERE email = $1 AND is_store_master = true AND is_active = true
+		WHERE email = $1 AND is_active = true
 		LIMIT 1
 	`
 	err := r.db.GetContext(ctx, &staff, query, email)

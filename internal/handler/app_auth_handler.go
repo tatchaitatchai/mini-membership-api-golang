@@ -24,6 +24,7 @@ func NewAppAuthHandler(appAuthService service.AppAuthService) *AppAuthHandler {
 
 // LoginStore handles store login via email
 func (h *AppAuthHandler) LoginStore(c *gin.Context) {
+
 	var req domain.AppLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

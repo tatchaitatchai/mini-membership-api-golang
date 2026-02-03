@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -239,6 +240,19 @@ func (r *orderRepository) CreateOrderTx(ctx context.Context, order *OrderCreate)
 			VALUES ($1, $2, $3, '{}', $4)
 		`
 		_, err = tx.ExecContext(ctx, promoQuery, orderID, *order.PromotionID, order.DiscountTotal, now)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 5. Record cash movement for change given (เงินทอน)
+	if order.ChangeAmount.GreaterThan(decimal.Zero) {
+		cashMovementQuery := `
+			INSERT INTO shift_cash_movements (store_id, branch_id, shift_id, movement_type, direction, amount, note, created_by_staff_id, created_at)
+			VALUES ($1, $2, $3, 'PAID_OUT', 'OUT', $4, $5, $6, $7)
+		`
+		note := fmt.Sprintf("เงินทอนจาก Order #%d", orderID)
+		_, err = tx.ExecContext(ctx, cashMovementQuery, order.StoreID, order.BranchID, order.ShiftID, order.ChangeAmount, note, order.StaffID, now)
 		if err != nil {
 			return nil, err
 		}

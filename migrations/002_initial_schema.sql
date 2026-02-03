@@ -327,16 +327,16 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TABLE promotion_products (
   id                BIGSERIAL PRIMARY KEY,
-  promotion_type_id  BIGINT NOT NULL REFERENCES promotion_types(id) ON DELETE CASCADE,
+  promotion_id       BIGINT NOT NULL REFERENCES promotions(id) ON DELETE CASCADE,
   product_id         BIGINT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
 
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  UNIQUE (promotion_type_id, product_id)
+  UNIQUE (promotion_id, product_id)
 );
 
-CREATE INDEX idx_promotion_products_type ON promotion_products(promotion_type_id);
+CREATE INDEX idx_promotion_products_promotion ON promotion_products(promotion_id);
 CREATE INDEX idx_promotion_products_product ON promotion_products(product_id);
 
 CREATE TRIGGER trg_promotion_products_updated_at
@@ -576,5 +576,118 @@ CREATE TABLE app_sessions (
 
 CREATE INDEX idx_app_sessions_store_staff ON app_sessions(store_id, staff_id, last_seen_at DESC);
 CREATE INDEX idx_app_sessions_store_branch ON app_sessions(store_id, branch_id, last_seen_at DESC);
+
+-- 1) Enum types (ถ้ายังไม่มี)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cash_direction') THEN
+    CREATE TYPE cash_direction AS ENUM ('IN', 'OUT');
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'shift_cash_movement_type') THEN
+    CREATE TYPE shift_cash_movement_type AS ENUM (
+      'ADD_FLOAT',     -- เติมเงินทอน
+      'PAID_OUT',      -- จ่ายเงินสดออก (ค่าใช้จ่าย)
+      'CASH_DROP',     -- ถอนเงินออกไปเก็บ/เข้าตู้เซฟ
+      'ADJUST',        -- ปรับยอด (กรณีพิเศษ)
+      'REFUND_CASH'    -- คืนเงินสด (ถ้ามี)
+    );
+  END IF;
+END $$;
+
+-- 2) Table: shift_cash_movements
+CREATE TABLE IF NOT EXISTS shift_cash_movements (
+  id BIGSERIAL PRIMARY KEY,
+
+  store_id  BIGINT NOT NULL,
+  branch_id BIGINT NOT NULL,
+  shift_id  BIGINT NOT NULL,
+
+  movement_type shift_cash_movement_type NOT NULL,
+  direction     cash_direction NOT NULL,
+
+  amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+
+  note TEXT NULL,
+
+  created_by_staff_id BIGINT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE shift_cash_movements
+  ADD CONSTRAINT fk_shift_cash_movements_store
+  FOREIGN KEY (store_id) REFERENCES stores(id)
+  ON UPDATE CASCADE ON DELETE RESTRICT;
+
+ALTER TABLE shift_cash_movements
+  ADD CONSTRAINT fk_shift_cash_movements_branch
+  FOREIGN KEY (branch_id) REFERENCES branches(id)
+  ON UPDATE CASCADE ON DELETE RESTRICT;
+
+ALTER TABLE shift_cash_movements
+  ADD CONSTRAINT fk_shift_cash_movements_shift
+  FOREIGN KEY (shift_id) REFERENCES shifts(id)
+  ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE shift_cash_movements
+  ADD CONSTRAINT fk_shift_cash_movements_staff
+  FOREIGN KEY (created_by_staff_id) REFERENCES staff_accounts(id)
+  ON UPDATE CASCADE ON DELETE RESTRICT;
+
+BEGIN;
+
+-- เก็บเหตุการณ์ "นับสต็อก" ตอนปิดกะ (1 shift อาจนับ 1 ครั้ง)
+CREATE TABLE IF NOT EXISTS shift_stock_counts (
+  id               BIGSERIAL PRIMARY KEY,
+
+  store_id          BIGINT NOT NULL REFERENCES stores(id) ON DELETE RESTRICT,
+  branch_id         BIGINT NOT NULL REFERENCES branches(id) ON DELETE RESTRICT,
+  shift_id          BIGINT NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+
+  counted_by        BIGINT REFERENCES staff_accounts(id) ON DELETE SET NULL,
+  counted_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  note              TEXT,
+
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- ปกติ 1 กะ นับได้ 1 ครั้ง (ถ้าคุณอยากให้นับได้หลายรอบ ให้เอา UNIQUE นี้ออก)
+  UNIQUE (shift_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_shift_stock_counts_shift_time
+  ON shift_stock_counts (shift_id, counted_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_shift_stock_counts_store_branch_time
+  ON shift_stock_counts (store_id, branch_id, counted_at DESC);
+
+-- ใช้ trigger updated_at ตัวเดียวกับที่คุณมีอยู่แล้ว
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'set_updated_at') THEN
+    DROP TRIGGER IF EXISTS trg_shift_stock_counts_updated_at ON shift_stock_counts;
+    CREATE TRIGGER trg_shift_stock_counts_updated_at
+    BEFORE UPDATE ON shift_stock_counts
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+  END IF;
+END $$;
+
+-- เก็บรายละเอียดสินค้าแต่ละตัวที่นับ
+CREATE TABLE IF NOT EXISTS shift_stock_count_items (
+  id                    BIGSERIAL PRIMARY KEY,
+  shift_stock_count_id  BIGINT NOT NULL REFERENCES shift_stock_counts(id) ON DELETE CASCADE,
+  product_id            BIGINT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+  expected_stock        INT NOT NULL DEFAULT 0,
+  actual_stock          INT NOT NULL DEFAULT 0,
+  difference            INT NOT NULL DEFAULT 0,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_shift_stock_count_items_count_id
+  ON shift_stock_count_items (shift_stock_count_id);
+
+CREATE INDEX IF NOT EXISTS idx_shift_stock_count_items_product
+  ON shift_stock_count_items (product_id);
 
 COMMIT;

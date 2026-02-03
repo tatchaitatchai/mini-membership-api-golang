@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -99,6 +100,8 @@ func (h *ShiftHandler) OpenShift(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("req: ", sessionInfo)
+
 	resp, err := h.shiftService.OpenShift(c.Request.Context(), token, sessionInfo.StoreID, *sessionInfo.BranchID, sessionInfo.StaffID, &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -131,6 +134,68 @@ func (h *ShiftHandler) GetCurrentShift(c *gin.Context) {
 	resp, err := h.shiftService.GetCurrentShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetShiftSummary returns the current shift summary for closing
+func (h *ShiftHandler) GetShiftSummary(c *gin.Context) {
+	token := extractBearerToken(c)
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session token required"})
+		return
+	}
+
+	sessionInfo, err := h.appAuthService.ValidateSession(c.Request.Context(), token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	if sessionInfo.BranchID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "please select a branch first"})
+		return
+	}
+
+	resp, err := h.shiftService.GetShiftSummary(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// CloseShift closes the current shift
+func (h *ShiftHandler) CloseShift(c *gin.Context) {
+	token := extractBearerToken(c)
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session token required"})
+		return
+	}
+
+	sessionInfo, err := h.appAuthService.ValidateSession(c.Request.Context(), token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	if sessionInfo.BranchID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "please select a branch first"})
+		return
+	}
+
+	var req domain.CloseShiftRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := h.shiftService.CloseShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID, sessionInfo.StaffID, &req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -36,13 +36,18 @@ func NewAppAuthService(repo repository.AppAuthRepository, sessionExpiration time
 }
 
 func (s *appAuthService) LoginStore(ctx context.Context, req *domain.AppLoginRequest) (*domain.AppLoginResponse, error) {
+	fmt.Println("LoginStore :: ", req.Email)
 	staff, err := s.repo.GetStaffByEmail(ctx, req.Email)
+
+	fmt.Println("Staff :: ", staff)
 	if err != nil {
 		return nil, err
 	}
 	if staff == nil {
 		return nil, errors.New("invalid email or password")
 	}
+
+	fmt.Println("Staff :: ", staff)
 
 	// Verify password
 	if !staff.PasswordHash.Valid || staff.PasswordHash.String == "" {

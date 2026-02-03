@@ -48,6 +48,7 @@ func main() {
 	appAuthRepo := repository.NewAppAuthRepository(db)
 	shiftRepo := repository.NewShiftRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
+	promotionRepo := repository.NewPromotionRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
@@ -55,6 +56,7 @@ func main() {
 	appAuthService := service.NewAppAuthService(appAuthRepo, mobileSessionExpiration)
 	shiftService := service.NewShiftService(shiftRepo)
 	orderService := service.NewOrderService(orderRepo)
+	promotionService := service.NewPromotionService(promotionRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
@@ -62,6 +64,7 @@ func main() {
 	appAuthHandler := handler.NewAppAuthHandler(appAuthService)
 	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
 	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService)
+	promotionHandler := handler.NewPromotionHandler(promotionService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -125,6 +128,8 @@ func main() {
 		{
 			shifts.POST("/open", shiftHandler.OpenShift)
 			shifts.GET("/current", shiftHandler.GetCurrentShift)
+			shifts.GET("/summary", shiftHandler.GetShiftSummary)
+			shifts.POST("/close", shiftHandler.CloseShift)
 		}
 
 		products := mobileV1.Group("/products")
@@ -142,6 +147,13 @@ func main() {
 			orders.POST("", orderHandler.CreateOrder)
 			orders.GET("", orderHandler.GetOrdersByShift)
 			orders.GET("/:id", orderHandler.GetOrderByID)
+		}
+
+		promotions := mobileV1.Group("/promotions")
+		{
+			promotions.GET("", promotionHandler.GetActivePromotions)
+			promotions.POST("/calculate", promotionHandler.CalculateDiscount)
+			promotions.POST("/detect", promotionHandler.DetectPromotions)
 		}
 	}
 
