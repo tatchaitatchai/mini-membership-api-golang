@@ -1,0 +1,2 @@
+id,store_id,from_branch_id,to_branch_id,status,sent_by,received_by,sent_at,received_at,note,created_at,updated_at
+10,1,,2,CREATED,,,,,,2026-02-03 13:08:06.517376+00,2026-02-03 13:08:06.517376+00

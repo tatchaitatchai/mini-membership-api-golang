@@ -1,0 +1,7 @@
+id,store_id,branch_id,shift_id,movement_type,direction,amount,note,created_by_staff_id,created_at
+1,1,2,2,PAID_OUT,OUT,5.00,เงินทอนจาก Order #2,1,2026-02-02 10:39:26.870898+00
+2,1,1,1,PAID_OUT,OUT,30.00,เงินทอนจาก Order #3,1,2026-02-02 11:02:42.721211+00
+3,1,2,3,PAID_OUT,OUT,35.00,เงินทอนจาก Order #4,1,2026-02-02 11:16:57.86481+00
+4,1,1,4,PAID_OUT,OUT,80.00,เงินทอนจาก Order #5,1,2026-02-02 11:33:11.24774+00
+5,1,1,4,PAID_OUT,OUT,35.00,เงินทอนจาก Order #6,1,2026-02-02 11:33:36.856492+00
+6,1,1,4,PAID_OUT,OUT,70.00,เงินทอนจาก Order #7,1,2026-02-02 11:48:30.537928+00
