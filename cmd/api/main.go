@@ -49,6 +49,7 @@ func main() {
 	shiftRepo := repository.NewShiftRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	promotionRepo := repository.NewPromotionRepository(db)
+	stockTransferRepo := repository.NewStockTransferRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
@@ -57,6 +58,7 @@ func main() {
 	shiftService := service.NewShiftService(shiftRepo)
 	orderService := service.NewOrderService(orderRepo)
 	promotionService := service.NewPromotionService(promotionRepo)
+	stockTransferService := service.NewStockTransferService(stockTransferRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
@@ -65,6 +67,7 @@ func main() {
 	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
 	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService)
 	promotionHandler := handler.NewPromotionHandler(promotionService, appAuthService)
+	stockTransferHandler := handler.NewStockTransferHandler(stockTransferService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -154,6 +157,17 @@ func main() {
 			promotions.GET("", promotionHandler.GetActivePromotions)
 			promotions.POST("/calculate", promotionHandler.CalculateDiscount)
 			promotions.POST("/detect", promotionHandler.DetectPromotions)
+		}
+
+		stockTransfers := mobileV1.Group("/stock-transfers")
+		{
+			stockTransfers.POST("", stockTransferHandler.CreateTransfer)
+			stockTransfers.POST("/withdraw", stockTransferHandler.WithdrawGoods)
+			stockTransfers.GET("", stockTransferHandler.GetTransfers)
+			stockTransfers.GET("/pending", stockTransferHandler.GetPendingTransfers)
+			stockTransfers.GET("/:id", stockTransferHandler.GetTransfer)
+			stockTransfers.POST("/:id/receive", stockTransferHandler.ReceiveTransfer)
+			stockTransfers.POST("/:id/cancel", stockTransferHandler.CancelTransfer)
 		}
 	}
 
