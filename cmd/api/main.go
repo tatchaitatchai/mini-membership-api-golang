@@ -153,6 +153,7 @@ func main() {
 			orders.POST("", orderHandler.CreateOrder)
 			orders.GET("", orderHandler.GetOrdersByShift)
 			orders.GET("/:id", orderHandler.GetOrderByID)
+			orders.POST("/:id/cancel", orderHandler.CancelOrder)
 		}
 
 		promotions := mobileV1.Group("/promotions")

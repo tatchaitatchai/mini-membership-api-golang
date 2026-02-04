@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -107,6 +108,7 @@ func (h *InventoryHandler) GetLowStockItems(c *gin.Context) {
 
 	response, err := h.inventoryService.GetLowStockItems(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
 	if err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

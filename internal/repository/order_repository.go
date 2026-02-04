@@ -16,6 +16,7 @@ type OrderRepository interface {
 	CreateOrderTx(ctx context.Context, order *OrderCreate) (*OrderResult, error)
 	GetOrdersByShift(ctx context.Context, storeID, branchID, shiftID int64) ([]OrderWithItems, error)
 	GetOrderByID(ctx context.Context, storeID, orderID int64) (*OrderWithItems, error)
+	CancelOrder(ctx context.Context, storeID, orderID int64, reason string, cancelledBy *int64) error
 }
 
 type BranchProductInfo struct {
@@ -341,4 +342,28 @@ func (r *orderRepository) getOrderItems(ctx context.Context, orderID int64) ([]O
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *orderRepository) CancelOrder(ctx context.Context, storeID, orderID int64, reason string, cancelledBy *int64) error {
+	query := `
+		UPDATE orders 
+		SET status = 'CANCELLED', 
+			cancel_reason = $1, 
+			cancelled_by = $2, 
+			cancelled_at = NOW(),
+			updated_at = NOW()
+		WHERE id = $3 AND store_id = $4 AND status = 'PAID'
+	`
+	result, err := r.db.ExecContext(ctx, query, reason, cancelledBy, orderID, storeID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("order not found or already cancelled")
+	}
+	return nil
 }

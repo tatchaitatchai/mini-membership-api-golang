@@ -74,9 +74,11 @@ type CloseShiftResponse struct {
 }
 
 type ShiftSummaryResponse struct {
-	ShiftID      int64   `json:"shift_id"`
-	StartingCash float64 `json:"starting_cash"`
-	TotalSales   float64 `json:"total_sales"`
-	OrderCount   int     `json:"order_count"`
-	ExpectedCash float64 `json:"expected_cash"`
+	ShiftID        int64   `json:"shift_id"`
+	StartingCash   float64 `json:"starting_cash"`
+	TotalSales     float64 `json:"total_sales"`
+	OrderCount     int     `json:"order_count"`
+	ExpectedCash   float64 `json:"expected_cash"`
+	CancelledTotal float64 `json:"cancelled_total"`
+	CancelledCount int     `json:"cancelled_count"`
 }

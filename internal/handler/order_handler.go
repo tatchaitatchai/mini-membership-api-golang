@@ -157,19 +157,13 @@ func (h *OrderHandler) GetOrdersByShift(c *gin.Context) {
 		return
 	}
 
-	shiftIDStr := c.Query("shift_id")
-	if shiftIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "shift_id is required"})
+	currentShift, err := h.shiftService.GetCurrentShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID)
+	if err != nil || currentShift == nil || !currentShift.HasActiveShift || currentShift.Shift == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no active shift"})
 		return
 	}
 
-	shiftID, err := strconv.ParseInt(shiftIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid shift_id"})
-		return
-	}
-
-	resp, err := h.orderService.GetOrdersByShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID, shiftID)
+	resp, err := h.orderService.GetOrdersByShift(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID, currentShift.Shift.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -199,6 +193,41 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	}
 
 	resp, err := h.orderService.GetOrderByID(c.Request.Context(), sessionInfo.StoreID, orderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *OrderHandler) CancelOrder(c *gin.Context) {
+	token := extractBearerToken(c)
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session token required"})
+		return
+	}
+
+	sessionInfo, err := h.appAuthService.ValidateSession(c.Request.Context(), token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	orderIDStr := c.Param("id")
+	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		return
+	}
+
+	var req domain.CancelOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := h.orderService.CancelOrder(c.Request.Context(), sessionInfo.StoreID, orderID, req.Reason, sessionInfo.StaffID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

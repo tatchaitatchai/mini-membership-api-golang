@@ -240,18 +240,21 @@ func (h *StockTransferHandler) CancelTransfer(c *gin.Context) {
 
 	sessionInfo, err := h.appAuthService.ValidateSession(c.Request.Context(), token)
 	if err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
 	transferID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transfer ID"})
 		return
 	}
 
 	err = h.stockTransferService.CancelTransfer(c.Request.Context(), sessionInfo.StoreID, transferID)
 	if err != nil {
+		fmt.Println("error :: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

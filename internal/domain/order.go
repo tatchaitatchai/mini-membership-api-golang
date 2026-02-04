@@ -81,3 +81,14 @@ type OrderItemInfo struct {
 type ListOrdersResponse struct {
 	Orders []OrderInfo `json:"orders"`
 }
+
+type CancelOrderRequest struct {
+	Reason   string `json:"reason" binding:"required"`
+	StaffPin string `json:"staff_pin" binding:"required"`
+}
+
+type CancelOrderResponse struct {
+	OrderID int64  `json:"order_id"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}

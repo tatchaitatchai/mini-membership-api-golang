@@ -22,6 +22,7 @@ type ShiftRepository interface {
 	GetShiftCashSales(ctx context.Context, storeID, shiftID int64) (decimal.Decimal, error)
 	GetShiftCashMovements(ctx context.Context, storeID, shiftID int64) (totalOut decimal.Decimal, totalIn decimal.Decimal, err error)
 	GetStaffNameByID(ctx context.Context, storeID, staffID int64) (string, error)
+	GetShiftCancelledOrdersSummary(ctx context.Context, storeID, shiftID int64) (cancelledTotal decimal.Decimal, cancelledCount int, err error)
 }
 
 type StockCountItem struct {
@@ -315,4 +316,22 @@ func (r *shiftRepository) GetStaffNameByID(ctx context.Context, storeID, staffID
 		return "", nil
 	}
 	return name, err
+}
+
+// GetShiftCancelledOrdersSummary returns total and count of cancelled orders for a shift
+func (r *shiftRepository) GetShiftCancelledOrdersSummary(ctx context.Context, storeID, shiftID int64) (cancelledTotal decimal.Decimal, cancelledCount int, err error) {
+	query := `
+		SELECT COALESCE(SUM(total_price), 0) as cancelled_total, COUNT(*) as cancelled_count
+		FROM orders
+		WHERE store_id = $1 AND shift_id = $2 AND status = 'CANCELLED'
+	`
+	var result struct {
+		CancelledTotal decimal.Decimal `db:"cancelled_total"`
+		CancelledCount int             `db:"cancelled_count"`
+	}
+	err = r.db.GetContext(ctx, &result, query, storeID, shiftID)
+	if err != nil {
+		return decimal.Zero, 0, err
+	}
+	return result.CancelledTotal, result.CancelledCount, nil
 }

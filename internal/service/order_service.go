@@ -15,6 +15,7 @@ type OrderService interface {
 	CreateOrder(ctx context.Context, storeID, branchID, shiftID, staffID int64, req *domain.CreateOrderRequest) (*domain.CreateOrderResponse, error)
 	GetOrdersByShift(ctx context.Context, storeID, branchID, shiftID int64) (*domain.ListOrdersResponse, error)
 	GetOrderByID(ctx context.Context, storeID, orderID int64) (*domain.OrderInfo, error)
+	CancelOrder(ctx context.Context, storeID, orderID int64, reason string, cancelledBy *int64) (*domain.CancelOrderResponse, error)
 }
 
 type orderService struct {
@@ -242,4 +243,16 @@ func (s *orderService) GetOrderByID(ctx context.Context, storeID, orderID int64)
 	result.Items = items
 
 	return result, nil
+}
+
+func (s *orderService) CancelOrder(ctx context.Context, storeID, orderID int64, reason string, cancelledBy *int64) (*domain.CancelOrderResponse, error) {
+	err := s.repo.CancelOrder(ctx, storeID, orderID, reason, cancelledBy)
+	if err != nil {
+		return nil, err
+	}
+	return &domain.CancelOrderResponse{
+		OrderID: orderID,
+		Status:  "CANCELLED",
+		Message: "Order cancelled successfully",
+	}, nil
 }

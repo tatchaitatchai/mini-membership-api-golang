@@ -72,12 +72,12 @@ type BranchProduct struct {
 
 // LowStockItem represents a product with low stock
 type LowStockItem struct {
-	ProductID    int64  `json:"product_id"`
-	ProductName  string `json:"product_name"`
-	CategoryName string `json:"category_name"`
-	OnStock      int    `json:"on_stock"`
-	ReorderLevel int    `json:"reorder_level"`
-	Price        int64  `json:"price"`
+	ProductID    int64   `json:"product_id"`
+	ProductName  string  `json:"product_name"`
+	CategoryName string  `json:"category_name"`
+	OnStock      int     `json:"on_stock"`
+	ReorderLevel int     `json:"reorder_level"`
+	Price        float64 `json:"price"`
 }
 
 // LowStockResponse represents the API response for low stock items

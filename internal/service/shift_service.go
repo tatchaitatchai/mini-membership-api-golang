@@ -176,8 +176,15 @@ func (s *shiftService) GetShiftSummary(ctx context.Context, storeID, branchID in
 		return nil, err
 	}
 
+	// Get cancelled orders summary
+	cancelledTotal, cancelledCount, err := s.repo.GetShiftCancelledOrdersSummary(ctx, storeID, shift.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	totalSalesFloat, _ := totalSales.Float64()
 	cashSalesFloat, _ := cashSales.Float64()
+	cancelledTotalFloat, _ := cancelledTotal.Float64()
 
 	// Expected cash in drawer = starting + cash_received - change_given
 	// cashSales = total cash received from customers (before giving change)
@@ -188,11 +195,13 @@ func (s *shiftService) GetShiftSummary(ctx context.Context, storeID, branchID in
 	expectedCash := startingCash + cashSalesFloat
 
 	return &domain.ShiftSummaryResponse{
-		ShiftID:      shift.ID,
-		StartingCash: startingCash,
-		TotalSales:   totalSalesFloat,
-		OrderCount:   orderCount,
-		ExpectedCash: expectedCash,
+		ShiftID:        shift.ID,
+		StartingCash:   startingCash,
+		TotalSales:     totalSalesFloat,
+		OrderCount:     orderCount,
+		ExpectedCash:   expectedCash,
+		CancelledTotal: cancelledTotalFloat,
+		CancelledCount: cancelledCount,
 	}, nil
 }
 

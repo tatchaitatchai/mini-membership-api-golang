@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/katom-membership/api/internal/domain"
@@ -49,7 +50,7 @@ func (r *inventoryRepository) GetMovementsByBranch(ctx context.Context, storeID,
 	query := `
 		SELECT 
 			im.id, im.product_id, p.product_name, im.movement_type, im.quantity_change,
-			im.from_stock_count, im.to_stock_count, im.reason, im.note, s.full_name as changed_by_name, im.created_at
+			im.from_stock_count, im.to_stock_count, im.reason, im.note, s.email as changed_by_name, im.created_at
 		FROM inventory_movements im
 		JOIN products p ON im.product_id = p.id
 		LEFT JOIN staff_accounts s ON im.changed_by = s.id
@@ -85,7 +86,7 @@ func (r *inventoryRepository) GetMovementsByBranch(ctx context.Context, storeID,
 func (r *inventoryRepository) GetLowStockItems(ctx context.Context, storeID, branchID int64, threshold int) (*domain.LowStockResponse, error) {
 	query := `
 		SELECT 
-			bp.product_id, p.product_name, c.category_name, bp.on_stock, bp.reorder_level, p.price
+			bp.product_id, p.product_name, c.category_name, bp.on_stock, bp.reorder_level, p.base_price
 		FROM branch_products bp
 		JOIN products p ON bp.product_id = p.id
 		JOIN categories c ON p.category_id = c.id
@@ -96,6 +97,7 @@ func (r *inventoryRepository) GetLowStockItems(ctx context.Context, storeID, bra
 	`
 	rows, err := r.db.QueryContext(ctx, query, storeID, branchID, threshold)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -109,6 +111,8 @@ func (r *inventoryRepository) GetLowStockItems(ctx context.Context, storeID, bra
 		}
 		items = append(items, item)
 	}
+
+	fmt.Println(items)
 
 	return &domain.LowStockResponse{
 		Items:      items,
