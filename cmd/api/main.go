@@ -51,6 +51,7 @@ func main() {
 	promotionRepo := repository.NewPromotionRepository(db)
 	stockTransferRepo := repository.NewStockTransferRepository(db)
 	inventoryRepo := repository.NewInventoryRepository(db)
+	pointsRepo := repository.NewPointsRepository(db)
 
 	authService := service.NewAuthService(staffUserRepo, cfg.JWT.Secret, cfg.JWT.Expiration)
 	memberService := service.NewMemberService(memberRepo)
@@ -61,16 +62,18 @@ func main() {
 	promotionService := service.NewPromotionService(promotionRepo)
 	stockTransferService := service.NewStockTransferService(stockTransferRepo)
 	inventoryService := service.NewInventoryService(inventoryRepo)
+	pointsService := service.NewPointsService(pointsRepo, orderRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	memberHandler := handler.NewMemberHandler(memberService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	appAuthHandler := handler.NewAppAuthHandler(appAuthService)
 	shiftHandler := handler.NewShiftHandler(shiftService, appAuthService)
-	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService)
+	orderHandler := handler.NewOrderHandler(orderService, appAuthService, shiftService, pointsService)
 	promotionHandler := handler.NewPromotionHandler(promotionService, appAuthService)
 	stockTransferHandler := handler.NewStockTransferHandler(stockTransferService, appAuthService)
 	inventoryHandler := handler.NewInventoryHandler(inventoryService, appAuthService)
+	pointsHandler := handler.NewPointsHandler(pointsService, appAuthService)
 
 	gin.SetMode(cfg.Server.Mode)
 	router := gin.Default()
@@ -179,6 +182,14 @@ func main() {
 			inventory.POST("/adjust", inventoryHandler.AdjustStock)
 			inventory.GET("/movements", inventoryHandler.GetMovements)
 			inventory.GET("/low-stock", inventoryHandler.GetLowStockItems)
+		}
+
+		points := mobileV1.Group("/points")
+		{
+			points.GET("/customer/:customer_id", pointsHandler.GetCustomerPoints)
+			points.GET("/customer/:customer_id/history", pointsHandler.GetPointHistory)
+			points.GET("/redeemable-products", pointsHandler.GetRedeemableProducts)
+			points.POST("/redeem", pointsHandler.RedeemPoints)
 		}
 	}
 

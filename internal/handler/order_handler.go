@@ -14,13 +14,15 @@ type OrderHandler struct {
 	orderService   service.OrderService
 	appAuthService service.AppAuthService
 	shiftService   service.ShiftService
+	pointsService  service.PointsService
 }
 
-func NewOrderHandler(orderService service.OrderService, appAuthService service.AppAuthService, shiftService service.ShiftService) *OrderHandler {
+func NewOrderHandler(orderService service.OrderService, appAuthService service.AppAuthService, shiftService service.ShiftService, pointsService service.PointsService) *OrderHandler {
 	return &OrderHandler{
 		orderService:   orderService,
 		appAuthService: appAuthService,
 		shiftService:   shiftService,
+		pointsService:  pointsService,
 	}
 }
 
@@ -134,6 +136,24 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Earn points for the customer if they are registered (not a guest)
+	if req.CustomerID != nil && *req.CustomerID > 0 {
+		// Build items list for points earning
+		pointsItems := make([]domain.OrderItemForPoints, len(req.Items))
+		for i, item := range req.Items {
+			pointsItems[i] = domain.OrderItemForPoints{
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+			}
+		}
+		// Earn 1 point per item purchased (per product)
+		_, pointsErr := h.pointsService.EarnPointsFromOrder(c.Request.Context(), sessionInfo.StoreID, *sessionInfo.BranchID, *req.CustomerID, resp.OrderID, pointsItems, sessionInfo.StaffID)
+		if pointsErr != nil {
+			// Log error but don't fail the order
+			fmt.Printf("Failed to earn points for customer %d: %v\n", *req.CustomerID, pointsErr)
+		}
 	}
 
 	c.JSON(http.StatusCreated, resp)
