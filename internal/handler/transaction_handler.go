@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/katom-membership/api/internal/domain"
-	"github.com/katom-membership/api/internal/middleware"
-	"github.com/katom-membership/api/internal/service"
+	"github.com/mini-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/middleware"
+	"github.com/mini-membership/api/internal/service"
 )
 
 type TransactionHandler struct {

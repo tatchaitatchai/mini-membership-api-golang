@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/katom-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/domain"
 	"github.com/shopspring/decimal"
 )
 

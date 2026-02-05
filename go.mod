@@ -1,4 +1,4 @@
-module github.com/katom-membership/api
+module github.com/mini-membership/api
 
 go 1.21
 

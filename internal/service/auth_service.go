@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/katom-membership/api/internal/domain"
-	"github.com/katom-membership/api/internal/repository"
+	"github.com/mini-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 

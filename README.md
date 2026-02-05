@@ -1,4 +1,4 @@
-# Katom Membership API
+# Mini Membership API
 
 ระบบ API สำหรับจัดการคะแนนสะสมสมาชิก (Membership Points System) ที่พัฒนาด้วย Golang
 
@@ -73,7 +73,7 @@ api/
 
 1. **Clone the repository**
 ```bash
-cd /Users/mindtatchai/Developer/katom-membership-fast/api
+cd mini-membership-api-golang
 ```
 
 2. **Install dependencies**
@@ -98,7 +98,7 @@ make docker-up
 ```bash
 make migrate-up
 # or
-psql postgresql://katom:H6Ng*>DzjbT@Y-l@localhost:5432/katom_membership -f migrations/001_initial_schema.sql
+psql postgresql://mini:1234@localhost:5432/mini_membership -f migrations/001_initial_schema.sql
 ```
 
 6. **Run the application**
@@ -142,7 +142,7 @@ The API will be available at `http://localhost:8080`
 curl -X POST http://localhost:8080/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "staff@katom.com",
+    "email": "staff@thecoffee.com",
     "password": "password123",
     "branch": "Bangkok"
   }'
@@ -154,7 +154,7 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "staff@katom.com",
+    "email": "staff@thecoffee.com",
     "password": "password123"
   }'
 ```
@@ -195,9 +195,9 @@ curl -X POST http://localhost:8080/api/v1/transactions \
 | GIN_MODE | Gin mode (debug/release) | debug |
 | POSTGRES_HOST | PostgreSQL host | localhost |
 | POSTGRES_PORT | PostgreSQL port | 5432 |
-| POSTGRES_USER | PostgreSQL user | katom |
+| POSTGRES_USER | PostgreSQL user | mini |
 | POSTGRES_PASSWORD | PostgreSQL password | - |
-| POSTGRES_DB | PostgreSQL database | katom_membership |
+| POSTGRES_DB | PostgreSQL database | mini_membership |
 | JWT_SECRET | JWT secret key (required) | - |
 | JWT_EXPIRATION | JWT expiration in seconds | 86400 (24h) |
 
@@ -236,4 +236,4 @@ make docker-logs
 
 ## License
 
-Private - Katom Membership System
+Private - Mini Membership System

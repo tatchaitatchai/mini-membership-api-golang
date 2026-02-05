@@ -3,18 +3,18 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: katom-membership-postgres
+    container_name: mini-membership-postgres
     environment:
-      POSTGRES_USER: katom
+      POSTGRES_USER: mini
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: katom_membership
+      POSTGRES_DB: mini_membership
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U katom -d katom_membership"]
+      test: ["CMD-SHELL", "pg_isready -U mini -d mini_membership"]
       interval: 10s
       timeout: 5s
       retries: 5

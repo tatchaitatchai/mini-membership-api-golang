@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/katom-membership/api/internal/domain"
-	"github.com/katom-membership/api/internal/repository"
+	"github.com/mini-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/repository"
 	"github.com/shopspring/decimal"
 )
 

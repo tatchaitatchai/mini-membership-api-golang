@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/katom-membership/api/config"
-	"github.com/katom-membership/api/internal/handler"
-	"github.com/katom-membership/api/internal/middleware"
-	"github.com/katom-membership/api/internal/repository"
-	"github.com/katom-membership/api/internal/service"
-	"github.com/katom-membership/api/pkg/database"
+	"github.com/mini-membership/api/config"
+	"github.com/mini-membership/api/internal/handler"
+	"github.com/mini-membership/api/internal/middleware"
+	"github.com/mini-membership/api/internal/repository"
+	"github.com/mini-membership/api/internal/service"
+	"github.com/mini-membership/api/pkg/database"
 )
 
 const mobileSessionExpiration = 30 * 24 * time.Hour // 30 days

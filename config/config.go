@@ -51,9 +51,9 @@ func Load() (*Config, error) {
 		Database: DatabaseConfig{
 			Host:     getEnv("POSTGRES_HOST", "localhost"),
 			Port:     getEnv("POSTGRES_PORT", "5432"),
-			User:     getEnv("POSTGRES_USER", "katom"),
+			User:     getEnv("POSTGRES_USER", "mini"),
 			Password: getEnv("POSTGRES_PASSWORD", ""),
-			DBName:   getEnv("POSTGRES_DB", "katom_membership"),
+			DBName:   getEnv("POSTGRES_DB", "mini_membership"),
 			SSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
 		},
 		JWT: JWTConfig{

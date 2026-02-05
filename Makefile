@@ -23,38 +23,39 @@ clean:
 	rm -rf bin/
 
 migrate-up:
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/001_initial_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/001_initial_schema.sql
 
 migrate-schema:
 	@echo "Running schema migration (002)..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/002_initial_schema.sql
 	@echo "Running schema additions (003)..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/003_addedit_schema.sql
 	@echo "Schema migration complete!"
 
 migrate-seed:
 	@echo "Running seed data (004)..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/004_seed_data.sql
 	@echo "Seed data complete!"
 
 migrate-all:
 	@echo "Running all migrations (002-004)..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/002_initial_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/003_addedit_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/004_seed_data.sql
 	@echo "All migrations complete!"
 
 migrate-reset:
 	@echo "Dropping all tables and re-running migrations..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO katom; GRANT ALL ON SCHEMA public TO public;"
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO mini; GRANT ALL ON SCHEMA public TO public;"
 	@echo "All tables dropped. Running migrations..."
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/002_initial_schema.sql
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/003_addedit_schema.sql
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership < migrations/004_seed_data.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/002_initial_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/003_addedit_schema.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/004_seed_data.sql
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership < migrations/005_loyalty_points.sql
 	@echo "Database reset complete!"
 
 migrate-down:
-	docker exec -i katom-membership-postgres psql -U katom -d katom_membership -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"
+	docker exec -i mini-membership-postgres psql -U mini -d mini_membership -c "DROP TABLE IF EXISTS member_point_transactions CASCADE; DROP TABLE IF EXISTS members CASCADE; DROP TABLE IF EXISTS staff_users CASCADE;"
 
 docker-up:
 	docker-compose up -d

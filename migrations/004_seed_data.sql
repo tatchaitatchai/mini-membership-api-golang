@@ -9,7 +9,7 @@ BEGIN;
 -- 1) Stores (2 stores)
 -- =========================================================
 INSERT INTO stores (id, store_name) VALUES
-  (1, 'ร้านกาแฟ คาทอม'),
+  (1, 'ร้านกาแฟ เดอะคอฟฟี่'),
   (2, 'ร้านขนมหวาน สวีทมี');
 
 SELECT setval('stores_id_seq', 2);
@@ -18,7 +18,7 @@ SELECT setval('stores_id_seq', 2);
 -- 2) Branches (2 branches per store = 4 total)
 -- =========================================================
 INSERT INTO branches (id, store_id, branch_name) VALUES
-  -- Store 1: ร้านกาแฟ คาทอม
+  -- Store 1: ร้านกาแฟ เดอะคอฟฟี่
   (1, 1, 'สาขาสยาม'),
   (2, 1, 'สาขาลาดพร้าว'),
   -- Store 2: ร้านขนมหวาน สวีทมี
@@ -32,22 +32,22 @@ SELECT setval('branches_id_seq', 4);
 --    - Manager: branch_id = NULL, is_store_master = true
 --    - Staff: branch_id = assigned branch
 --    Password: '123456' -> bcrypt hash
---    PIN: '1234' -> SHA256 hash
+--    PIN: unique per staff (see below)
 -- =========================================================
 INSERT INTO staff_accounts (id, store_id, branch_id, email, password_hash, pin_hash, is_store_master) VALUES
-  -- Store 1: Manager (no branch)
-  (1, 1, NULL, 'manager@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', true),
-  -- Store 1: Staff for branch 1 (สาขาสยาม)
-  (2, 1, 1, 'em1@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
-  -- Store 1: Staff for branch 2 (สาขาลาดพร้าว)
-  (3, 1, 2, 'em2@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
+  -- Store 1: Manager (no branch) - PIN: 1234
+  (1, 1, NULL, 'manager@thecoffee.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', true),
+  -- Store 1: Staff for branch 1 (สาขาสยาม) - PIN: 2345
+  (2, 1, 1, 'staff1@thecoffee.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '38083c7ee9121e17401883566a148aa5c2e2d55dc53bc4a94a026517dbff3c6b', false),
+  -- Store 1: Staff for branch 2 (สาขาลาดพร้าว) - PIN: 3456
+  (3, 1, 2, 'staff2@thecoffee.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', 'ceaa28bba4caba687dc31b1bbe79eca3c70c33f871f1ce8f528cf9ab5cfd76dd', false),
   
-  -- Store 2: Manager (no branch)
-  (4, 2, NULL, 'manager@sweetme.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', true),
-  -- Store 2: Staff for branch 3 (สาขาเซ็นทรัล)
-  (5, 2, 3, 'em3@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false),
-  -- Store 2: Staff for branch 4 (สาขาเมกาบางนา)
-  (6, 2, 4, 'em4@katom.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', false);
+  -- Store 2: Manager (no branch) - PIN: 4567
+  (4, 2, NULL, 'manager@sweetme.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', 'db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669', true),
+  -- Store 2: Staff for branch 3 (สาขาเซ็นทรัล) - PIN: 5678
+  (5, 2, 3, 'staff1@sweetme.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', 'f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75', false),
+  -- Store 2: Staff for branch 4 (สาขาเมกาบางนา) - PIN: 6789
+  (6, 2, 4, 'staff2@sweetme.com', '$2y$10$flyI5EBS3p4Szcs.KT7JP.Or7w1HXt07TuDTKUHbL7KmLp0aB29K2', '499bc7df9d8873c1c38e6898177c343b2a34d2eb43178a9eb4efcb993366c8cd', false);
 
 SELECT setval('staff_accounts_id_seq', 6);
 
@@ -55,7 +55,7 @@ SELECT setval('staff_accounts_id_seq', 6);
 -- 4) Categories (2 per store = 4 total)
 -- =========================================================
 INSERT INTO categories (id, store_id, category_name) VALUES
-  -- Store 1: ร้านกาแฟ
+  -- Store 1: ร้านกาแฟ เดอะคอฟฟี่
   (1, 1, 'เครื่องดื่มร้อน'),
   (2, 1, 'เครื่องดื่มเย็น'),
   -- Store 2: ร้านขนมหวาน
@@ -116,7 +116,7 @@ INSERT INTO branch_products (store_id, branch_id, product_id, on_stock, reorder_
 --    PIN: '1231' -> SHA256: 52a6eb687cd22e80d3342eac6fcc7f2e19209e8f83eb9b82e81c6f3e6f30743b
 -- =========================================================
 INSERT INTO customers (id, store_id, customer_code, full_name, phone, phone_last4) VALUES
-  -- Store 1: ร้านกาแฟ คาทอม
+  -- Store 1: ร้านกาแฟ เดอะคอฟฟี่
   (1, 1, 'CUST-001', 'สมชาย ใจดี', '0812345678', '5678'),
   (2, 1, 'CUST-002', 'สมหญิง รักสวย', '0898765432', '5432'),
   -- Store 2: ร้านขนมหวาน สวีทมี
@@ -134,7 +134,7 @@ SELECT setval('customers_id_seq', 4);
 --    5. BUY_N_BAHT_OFF - ซื้อ N ชิ้น ลด N บาท
 -- =========================================================
 INSERT INTO promotion_types (id, store_id, name, detail) VALUES
-  -- Store 1: ร้านกาแฟ คาทอม
+  -- Store 1: ร้านกาแฟ เดอะคอฟฟี่
   (1, 1, 'ลดเปอร์เซ็นต์', 'ลดราคาเป็นเปอร์เซ็นต์ตรงๆ เช่น ลด 10%'),
   (2, 1, 'ลดบาท', 'ลดราคาเป็นจำนวนบาทตรงๆ เช่น ลด 20 บาท'),
   (3, 1, 'ซื้อเป็นเซ็ต', 'ซื้อสินค้าครบเซ็ตได้ราคาพิเศษ (ระบบ auto-detect)'),
@@ -167,7 +167,7 @@ INSERT INTO promotion_type_branches (store_id, branch_id, promotion_type_id) VAL
 -- 10) Promotions (4 promotions per store = 8 total)
 -- =========================================================
 INSERT INTO promotions (id, store_id, promotion_type_id, promotion_name, is_active, starts_at, ends_at) VALUES
-  -- Store 1: ร้านกาแฟ คาทอม
+  -- Store 1: ร้านกาแฟ เดอะคอฟฟี่
   -- Type 1: ลดเปอร์เซ็นต์ - ลาเต้ลด 10%
   (1, 1, 1, 'ลาเต้ลด 10%', true, '2025-01-01 00:00:00+07', '2026-12-31 23:59:59+07'),
   -- Type 2: ลดบาท - อเมริกาโน่ลด 10 บาท
@@ -317,7 +317,7 @@ COMMIT;
 -- Summary:
 -- =========================================================
 -- Stores: 2
---   1. ร้านกาแฟ คาทอม
+--   1. ร้านกาแฟ เดอะคอฟฟี่
 --   2. ร้านขนมหวาน สวีทมี
 --
 -- Branches: 4 (2 per store)
@@ -327,8 +327,14 @@ COMMIT;
 -- Staff Accounts: 6
 --   Store 1: 1 manager + 2 staff (1 per branch)
 --   Store 2: 1 manager + 2 staff (1 per branch)
---   Login: manager@katom.com / manager@sweetme.com
---   PIN: 1234 (all staff)
+--   Login: manager@thecoffee.com / manager@sweetme.com
+--   PINs (unique per staff):
+--     - manager@thecoffee.com: 1234
+--     - staff1@thecoffee.com: 2345
+--     - staff2@thecoffee.com: 3456
+--     - manager@sweetme.com: 4567
+--     - staff1@sweetme.com: 5678
+--     - staff2@sweetme.com: 6789
 --
 -- Categories: 4 (2 per store)
 --   Store 1: เครื่องดื่มร้อน, เครื่องดื่มเย็น

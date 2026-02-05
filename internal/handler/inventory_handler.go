@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/katom-membership/api/internal/domain"
-	"github.com/katom-membership/api/internal/service"
+	"github.com/mini-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/service"
 )
 
 type InventoryHandler struct {

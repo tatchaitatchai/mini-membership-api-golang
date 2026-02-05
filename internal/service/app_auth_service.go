@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/katom-membership/api/internal/domain"
-	"github.com/katom-membership/api/internal/repository"
-	"github.com/katom-membership/api/pkg/models"
+	"github.com/mini-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/repository"
+	"github.com/mini-membership/api/pkg/models"
 	"golang.org/x/crypto/bcrypt"
 )
 

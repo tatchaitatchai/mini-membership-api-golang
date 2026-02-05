@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/katom-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/domain"
 )
 
 type MemberRepository interface {

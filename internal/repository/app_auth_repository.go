@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/katom-membership/api/pkg/models"
+	"github.com/mini-membership/api/pkg/models"
 )
 
 type AppAuthRepository interface {

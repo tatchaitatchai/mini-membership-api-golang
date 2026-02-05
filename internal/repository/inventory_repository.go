@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/katom-membership/api/internal/domain"
+	"github.com/mini-membership/api/internal/domain"
 )
 
 type InventoryRepository interface {
